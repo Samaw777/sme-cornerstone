@@ -1,6 +1,6 @@
 <div class="chart-wrap">
 <svg class="chart" viewBox="0 0 {{ width }} {{ height }}" role="img" aria-label="{% if kind == 'net' %}Monthly net cash movement{% else %}Monthly revenue and operating expenses{% endif %}">
-  <defs><pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="#6c7a90" stroke-width="2" /></pattern></defs>
+  <defs><pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="#98a2b3" stroke-width="2" /></pattern></defs>
   {% for g in grid %}<line class="{% if g.label == '0' %}zero-line{% else %}grid-line{% endif %}" x1="{{ pad_left }}" x2="{{ width }}" y1="{{ g.y|stringformat:".1f" }}" y2="{{ g.y|stringformat:".1f" }}" /><text x="{{ pad_left|add:'-6' }}" y="{{ g.y|stringformat:".1f" }}" dy="3" text-anchor="end">{{ g.label }}</text>{% endfor %}
   {% for b in bars %}<rect class="{{ b.cls }}" x="{{ b.x|stringformat:".1f" }}" y="{{ b.y|stringformat:".1f" }}" width="{{ b.w|stringformat:".1f" }}" height="{{ b.h|stringformat:".1f" }}" rx="2"><title>{{ b.title }}</title></rect>{% endfor %}
   {% for l in labels %}<text x="{{ l.x|stringformat:".1f" }}" y="{{ label_y }}" text-anchor="middle">{{ l.text }} ’{{ l.year }}</text>{% endfor %}

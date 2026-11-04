@@ -20,8 +20,8 @@ def manifest(request):
         "start_url": "/",
         "scope": "/",
         "display": "standalone",
-        "background_color": "#0b1220",
-        "theme_color": "#0b1220",
+        "background_color": "#f5f6f8",
+        "theme_color": "#0e5a43",
         "icons": [
             _icon("icons/icon-192.png", 192),
             _icon("icons/icon-512.png", 512),

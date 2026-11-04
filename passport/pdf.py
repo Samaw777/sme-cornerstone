@@ -10,11 +10,11 @@ from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
 from reportlab.platypus import KeepTogether, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
-INK = colors.HexColor("#0b1220")
-MUTED = colors.HexColor("#5b6678")
-LINE = colors.HexColor("#d9dee7")
-ACCENT = colors.HexColor("#b07d1e")
-SOFT = colors.HexColor("#f4f1ea")
+INK = colors.HexColor("#101828")
+MUTED = colors.HexColor("#667085")
+LINE = colors.HexColor("#e4e7ec")
+ACCENT = colors.HexColor("#0e5a43")
+SOFT = colors.HexColor("#ecf5f1")
 
 
 def _money(value):
