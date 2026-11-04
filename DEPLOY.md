@@ -56,21 +56,22 @@ spell takes 30–60 seconds. The paid Starter plan stays awake.
 
 ## Alternative: deploy on Vercel
 
-Vercel runs the app as serverless functions (`api/index.py`, routed by `vercel.json`). There is
+Vercel's **Django** preset runs the app as a serverless function, using `config/wsgi.py`. There is
 no build step that migrates the database and no server shell, so a few things differ from Render.
 
 1. **Use the transaction pooler string.** In Supabase → **Connect**, pick **Transaction pooler**
    (port **6543**), not the session pooler. Each Vercel request opens a fresh connection, and the
    transaction pooler is made for that. Fill in the password as in step 1.
-2. **Create the tables from your computer.** Put the string in a local `.env` as `DATABASE_URL`,
-   set `SECRET_KEY`, then run:
+2. **Create the tables from your computer.** Use the **Session pooler** string (port 5432) for
+   this: the transaction pooler can break migrations run from a normal computer. Put it in a local
+   `.env` as `DATABASE_URL`, set `SECRET_KEY`, then run:
    ```bash
    python manage.py migrate
    python manage.py createsuperuser   # optional: a platform administrator for /console/
    ```
    Run `migrate` again from your computer whenever a change adds a migration, *before* pushing it.
 3. **Import the project.** On [vercel.com](https://vercel.com), log in with GitHub, click
-   **Add New → Project** and import this repository. Leave the framework preset as **Other** and
+   **Add New → Project** and import this repository. Leave the framework preset as **Django** and
    the build settings empty.
 4. **Set environment variables** (Production and Preview):
    | Name | Value |
