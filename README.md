@@ -137,6 +137,23 @@ Demo partner API token: `pk_demo_pilotmfi.demo-secret-not-for-production`
 All businesses, institutions, documents and figures are synthetic. Set `DEMO_MODE=0` and never
 run `seed_demo` against a database holding real data.
 
+### Sample data for your own business
+
+To see how the app looks with a year of use, fill a business you created with demo-labelled
+transport-and-logistics records:
+
+```bash
+python manage.py seed_business "Your Business Name"
+```
+
+It adds 12 months of transactions, a CSV import, receipts, a correction, invoices, obligations
+and the demo bank source (skip that with `--no-bank`). All of it is flagged and labelled **Demo**.
+Remove it with:
+
+```bash
+python manage.py seed_business "Your Business Name" --remove
+```
+
 ### Tests
 
 ```bash
