@@ -42,6 +42,13 @@ if render_host := os.environ.get("RENDER_EXTERNAL_HOSTNAME"):
     ALLOWED_HOSTS.append(render_host)
     CSRF_TRUSTED_ORIGINS.append(f"https://{render_host}")
 
+# Vercel sets VERCEL=1 plus the production, branch and per-deployment hostnames.
+ON_VERCEL = bool(os.environ.get("VERCEL"))
+for name in ("VERCEL_PROJECT_PRODUCTION_URL", "VERCEL_BRANCH_URL", "VERCEL_URL"):
+    if vercel_host := os.environ.get(name):
+        ALLOWED_HOSTS.append(vercel_host)
+        CSRF_TRUSTED_ORIGINS.append(f"https://{vercel_host}")
+
 # Shows the "demo environment" ribbon and the demo sign-in hints on the login page.
 DEMO_MODE = env_bool("DEMO_MODE", DEBUG)
 
@@ -106,11 +113,17 @@ if DATABASE_URL:
     DATABASES = {
         "default": dj_database_url.parse(
             DATABASE_URL,
-            conn_max_age=60,
-            conn_health_checks=True,
+            # Serverless functions can't hold connections between requests.
+            conn_max_age=0 if ON_VERCEL else 60,
+            conn_health_checks=not ON_VERCEL,
             ssl_require=DATABASE_URL.startswith("postgres") and "sslmode=" not in DATABASE_URL,
         )
     }
+    if ON_VERCEL:
+        # Vercel connects through Supabase's transaction pooler (port 6543), which hands each
+        # transaction to any server connection: no prepared statements or server-side cursors.
+        DATABASES["default"]["DISABLE_SERVER_SIDE_CURSORS"] = True
+        DATABASES["default"].setdefault("OPTIONS", {})["prepare_threshold"] = None
 else:
     DATABASES = {
         "default": {
@@ -156,19 +169,22 @@ DEFAULT_CURRENCY = "ETB"
 
 STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
-STATIC_ROOT = BASE_DIR / "staticfiles"
+STATIC_ROOT = None if os.environ.get("VERCEL") else BASE_DIR / "staticfiles"
 STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
     "staticfiles": {
+        # Vercel has no collectstatic step, so WhiteNoise serves straight from static/.
         "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"
-        if DEBUG or TESTING
+        if DEBUG or TESTING or ON_VERCEL
         else "whitenoise.storage.CompressedManifestStaticFilesStorage"
     },
 }
+WHITENOISE_USE_FINDERS = ON_VERCEL
 
 # Supporting documents are stored in the database (see ledger.DocumentBlob), never
 # under a public URL, and are only streamed back through an authorised view.
-DOCUMENT_MAX_BYTES = int(os.environ.get("DOCUMENT_MAX_BYTES", str(5 * 1024 * 1024)))
+# Vercel rejects request bodies over 4.5 MB, so uploads there default to 4 MB.
+DOCUMENT_MAX_BYTES = int(os.environ.get("DOCUMENT_MAX_BYTES", str((4 if ON_VERCEL else 5) * 1024 * 1024)))
 CSV_IMPORT_MAX_BYTES = int(os.environ.get("CSV_IMPORT_MAX_BYTES", str(1024 * 1024)))
 DATA_UPLOAD_MAX_MEMORY_SIZE = DOCUMENT_MAX_BYTES + 1024 * 1024
 FILE_UPLOAD_MAX_MEMORY_SIZE = DOCUMENT_MAX_BYTES + 1024 * 1024

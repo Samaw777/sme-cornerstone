@@ -54,6 +54,37 @@ ephemeral).
 Render's free tier sleeps after 15 minutes without visitors, so the first page load after a quiet
 spell takes 30–60 seconds. The paid Starter plan stays awake.
 
+## Alternative: deploy on Vercel
+
+Vercel runs the app as serverless functions (`api/index.py`, routed by `vercel.json`). There is
+no build step that migrates the database and no server shell, so a few things differ from Render.
+
+1. **Use the transaction pooler string.** In Supabase → **Connect**, pick **Transaction pooler**
+   (port **6543**), not the session pooler. Each Vercel request opens a fresh connection, and the
+   transaction pooler is made for that. Fill in the password as in step 1.
+2. **Create the tables from your computer.** Put the string in a local `.env` as `DATABASE_URL`,
+   set `SECRET_KEY`, then run:
+   ```bash
+   python manage.py migrate
+   python manage.py createsuperuser   # optional: a platform administrator for /console/
+   ```
+   Run `migrate` again from your computer whenever a change adds a migration, *before* pushing it.
+3. **Import the project.** On [vercel.com](https://vercel.com), log in with GitHub, click
+   **Add New → Project** and import this repository. Leave the framework preset as **Other** and
+   the build settings empty.
+4. **Set environment variables** (Production and Preview):
+   | Name | Value |
+   | --- | --- |
+   | `DATABASE_URL` | the transaction pooler string |
+   | `SECRET_KEY` | a long random string: `python -c "import secrets; print(secrets.token_urlsafe(50))"` |
+   | `DEMO_MODE` | `0` |
+5. Click **Deploy**. You'll get a URL like `https://sme-cornerstone.vercel.app`; Vercel's own
+   hostnames are allowed automatically.
+
+Differences on Vercel: document uploads are limited to 4 MB (Vercel caps requests at 4.5 MB), and
+the partner API rate limit is counted per function instance, so it is looser than on one server.
+Static files are served by the app itself.
+
 ## Optional extras
 
 - **Password reset emails**: add `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`,
