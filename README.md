@@ -7,8 +7,17 @@ institution (MFI).
 > The passport provides financial evidence and is not a credit decision. The platform does not lend,
 > approve credit, score creditworthiness or replace a lender's underwriting.
 
-It works on phones and desktops, and you can add it to your home screen. In Safari, use
-**Share → Add to Home Screen**. In Chrome, use **Install app**.
+It works on phones and desktops, and you can add it to your home screen (see below).
+
+## Install on your phone
+
+Open the site in your phone's browser (it must be served over HTTPS, e.g. your Render URL), then:
+
+- **iPhone (Safari)**: tap **Share → Add to Home Screen**.
+- **Android (Chrome)**: tap the **⋮** menu → **Install app** (or **Add to Home screen**).
+
+It opens full-screen from the new icon, straight to the home page. It still needs an internet
+connection; there is no offline mode.
 
 ## Implementation plan and assumptions
 
