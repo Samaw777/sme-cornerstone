@@ -9,7 +9,6 @@ import sys
 from pathlib import Path
 
 import dj_database_url
-from django.utils.translation import gettext_lazy as _
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -157,7 +156,9 @@ SESSION_COOKIE_SAMESITE = "Lax"
 # English now; the labels are wrapped for translation so Amharic can be added
 # with `makemessages -l am` without code changes.
 LANGUAGE_CODE = "en"
-LANGUAGES = [("en", _("English")), ("am", _("Amharic"))]
+# Plain strings, not gettext_lazy: Vercel's build serialises settings before Django's apps
+# load, and a lazy translation can't be evaluated that early.
+LANGUAGES = [("en", "English"), ("am", "Amharic")]
 LOCALE_PATHS = [BASE_DIR / "locale"]
 USE_I18N = True
 USE_TZ = True
