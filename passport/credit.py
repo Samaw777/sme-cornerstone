@@ -148,8 +148,51 @@ def compute(business, txns, monthly, report_day, start, end):
                                        "as_of_month": max(b.month for b in latest).strftime("%Y-%m")},
                                basis="Connected accounts only" + (" — DEMO SOURCE, not real verification." if demo else ".")))
 
-    return {"note": NOTE, "metrics": metrics,
-            "scores": [evidence_strength(txns), data_completeness(business, txns, monthly, start, end)]}
+    scores = [evidence_strength(txns), data_completeness(business, txns, monthly, start, end)]
+    for item in metrics + scores:
+        item["summary"] = _summary(item)
+    for score in scores:
+        score["band"] = band(score)
+    return {"note": NOTE, "metrics": metrics, "scores": scores}
+
+
+def _etb(value):
+    return f"ETB {Decimal(value):,.0f}"
+
+
+def _summary(m):
+    """One short line for the report tile, built only from the metric's own inputs."""
+    if not m["available"]:
+        return m["reason"]
+    i = {row["key"]: row["value"] for row in m["inputs"]}
+    key = m["key"]
+    if key == "operating_margin":
+        return f"{_etb(i['revenue'])} revenue over {i['months']} months"
+    if key == "surplus_months":
+        return "Complete months where revenue beat running costs"
+    if key == "revenue_stability":
+        return f"Variation {i['coefficient_of_variation']} across {i['months']} months"
+    if key == "debt_service_coverage":
+        service = i.get("average_monthly_repayments") or i.get("monthly_loan_obligations")
+        return f"{_etb(i['average_monthly_surplus'])}/mo surplus vs {_etb(service)}/mo debt"
+    if key == "receivable_days":
+        return f"{_etb(i['outstanding'])} outstanding · {i['overdue_share_percent']}% overdue"
+    if key == "cash_buffer":
+        return f"{_etb(i['closing_balance'])} balance" + (" · demo source" if "DEMO" in m["basis"] else "")
+    if key == "evidence_strength":
+        return f"{i['system_verified']} system-verified · {i['self_reported']} self-reported"
+    if key == "data_completeness":
+        return m["basis"]
+    return ""
+
+
+def band(score):
+    """Describes the records behind the report (how well evidenced, how complete),
+    never the business's creditworthiness."""
+    if not score["available"]:
+        return None
+    value = int(score["value"])
+    return "Strong" if value >= 70 else "Moderate" if value >= 40 else "Limited"
 
 
 def evidence_strength(txns):

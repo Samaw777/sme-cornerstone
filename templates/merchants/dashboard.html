@@ -30,6 +30,22 @@
   </div>
 </div>
 {% else %}
+<section class="card cr-card mt-2">
+  <div class="cr-head">
+    <div>
+      <p class="eyebrow">Credit metrics report · {{ data.period.label }}</p>
+      <h2 class="cr-title">{{ business.name }}</h2>
+      <p class="card-sub">What a lender looks at, calculated from your records. Banks see it only if you share it.</p>
+    </div>
+    <div class="cr-meta">
+      <span class="chip">Method {{ data.calculation_version }}</span>
+      {% if data.includes_demo_data %}<span class="badge badge-demo">Includes demo data</span>{% endif %}
+      <a class="btn btn-secondary btn-sm" href="{% url 'passport' %}">{% icon "passport" 14 %} Full passport</a>
+    </div>
+  </div>
+  {% include "passport/_credit.html" with cm=data.credit_metrics %}
+</section>
+
 <section class="stats mt-2">
   <div class="card"><p class="stat-label">{% icon "trending-up" 14 %} Revenue</p><p class="stat-value">{{ data.totals.revenue|etb }}</p><p class="stat-note">{{ data.period.months_with_records }} of {{ data.period.months }} months recorded</p></div>
   <div class="card"><p class="stat-label">{% icon "trending-down" 14 %} Operating expenses</p><p class="stat-value">{{ data.totals.operating_expenses|etb }}</p><p class="stat-note">Stock, rent, wages, utilities…</p></div>
@@ -60,13 +76,6 @@
     {% if not has_sources %}<p class="small muted mt-1">Nothing is system-verified until an authorised source is connected. <a class="link" href="{% url 'sources' %}">Connected sources</a></p>{% endif %}
   </section>
 </div>
-
-<section class="card mt-2">
-  <div class="card-head"><div><p class="card-title">{% icon "gauge" 16 %} Credit-relevant metrics</p>
-    <p class="card-sub">What a lender would look at, from your records. Share them only if you choose to.</p></div>
-    <a class="chip" href="{% url 'passport' %}">In your passport</a></div>
-  {% include "passport/_credit.html" with cm=data.credit_metrics %}
-</section>
 
 <section class="card mt-2">
   <div class="card-head"><p class="card-title">{% icon "alert" 16 %} Data-quality alerts</p><a class="chip" href="{% url 'findings' %}">See all</a></div>

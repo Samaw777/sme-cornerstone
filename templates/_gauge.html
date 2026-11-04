@@ -1,0 +1,13 @@
+<div class="gauge {{ band_class }}">
+  <svg viewBox="0 0 120 70" role="img" aria-label="{{ score.label }}: {% if score.available %}{{ score.value }} out of 100{% else %}not calculated{% endif %}">
+    <path class="gauge-track" d="M8 62 A52 52 0 0 1 112 62" pathLength="{{ length }}" />
+    {% if score.available %}<path class="gauge-fill" d="M8 62 A52 52 0 0 1 112 62" pathLength="{{ length }}" stroke-dasharray="{{ filled }} {{ length }}" />{% endif %}
+  </svg>
+  <div class="gauge-readout">
+    <span class="gauge-value">{% if score.available %}{{ score.value }}{% else %}—{% endif %}</span>
+    <span class="gauge-scale">/ 100</span>
+  </div>
+  <p class="gauge-label">{{ score.label }}</p>
+  {% if score.band %}<span class="gauge-band">{{ score.band }}</span>{% endif %}
+  <p class="gauge-summary">{{ score.summary }}</p>
+</div>

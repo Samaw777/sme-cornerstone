@@ -190,3 +190,15 @@ def monthly_chart(monthly, kind="revenue_expenses"):
 def key_label(value):
     """'average_monthly_revenue' -> 'Average monthly revenue'."""
     return str(value).replace("_", " ").capitalize()
+
+
+GAUGE_RADIUS = 52
+GAUGE_LENGTH = 3.14159265 * GAUGE_RADIUS  # a half circle
+
+
+@register.inclusion_tag("_gauge.html")
+def gauge(score):
+    """Semicircle dial for a 0–100 score (or an empty dial when it can't be calculated)."""
+    value = int(score["value"]) if score.get("available") else 0
+    return {"score": score, "filled": f"{GAUGE_LENGTH * value / 100:.1f}", "length": f"{GAUGE_LENGTH:.1f}",
+            "band_class": {"Strong": "band-strong", "Moderate": "band-moderate", "Limited": "band-limited"}.get(score.get("band"), "")}

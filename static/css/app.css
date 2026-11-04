@@ -697,12 +697,68 @@ details.disclosure > .disclosure-body { padding: 0 1rem 1rem; }
 .finding p { font-size: 0.84rem; color: var(--muted); margin-top: 0.15rem; }
 .finding .merchant-note { margin-top: 0.4rem; padding: 0.45rem 0.7rem; border-left: 2px solid var(--accent); font-size: 0.82rem; background: rgb(230 184 92 / 0.05); }
 
-.score { padding: 0.9rem 1rem; border-radius: var(--radius-sm); border: 1px solid var(--line); background: rgb(0 0 0 / 0.14); }
-.score-label { font-size: 0.86rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.45rem; flex-wrap: wrap; }
-.score-value { font-family: var(--font-head); font-size: 1.6rem; line-height: 1; }
-.score-value small { font-family: var(--font-body); font-size: 0.78rem; color: var(--faint); }
-.meter-bar { height: 8px; margin-top: 0.7rem; border-radius: 999px; background: var(--line); overflow: hidden; }
-.meter-bar span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--ev-derived), #d6c9ff); }
+/* ---------- Credit metrics report ---------- */
+
+.cr-card {
+  border-color: rgb(181 156 255 / 0.28);
+  background:
+    radial-gradient(34rem 16rem at 0% 0%, rgb(181 156 255 / 0.12), transparent 70%),
+    radial-gradient(30rem 14rem at 100% 100%, rgb(230 184 92 / 0.08), transparent 70%),
+    linear-gradient(180deg, rgb(255 255 255 / 0.06), rgb(255 255 255 / 0.02));
+}
+.cr-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
+.cr-title { margin-top: 0.3rem; font-family: var(--font-head); font-weight: 400; font-size: clamp(1.4rem, 3.6vw, 1.85rem); letter-spacing: -0.01em; }
+.cr-meta { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.credit-report { display: grid; gap: 1rem; }
+@media (min-width: 1000px) { .credit-report { grid-template-columns: minmax(19rem, 0.85fr) 1.6fr; } }
+.cr-scores { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+.gauge {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 1rem 0.75rem 0.9rem;
+  border-radius: var(--radius-sm);
+  background: rgb(0 0 0 / 0.22);
+  border: 1px solid var(--line);
+  --band: var(--faint);
+}
+.gauge.band-strong { --band: var(--ok); }
+.gauge.band-moderate { --band: var(--ev-supported); }
+.gauge.band-limited { --band: var(--warn); }
+.gauge svg { width: 100%; max-width: 10rem; overflow: visible; }
+.gauge-track, .gauge-fill { fill: none; stroke-width: 10; stroke-linecap: round; }
+.gauge-track { stroke: rgb(255 255 255 / 0.08); }
+.gauge-fill { stroke: var(--band); filter: drop-shadow(0 0 6px color-mix(in srgb, var(--band) 45%, transparent)); animation: dial 1.2s var(--ease) both; }
+@keyframes dial { from { stroke-dasharray: 0 999; } }
+.gauge-readout { margin-top: -2.4rem; display: flex; align-items: baseline; gap: 0.2rem; }
+.gauge-value { font-family: var(--font-head); font-size: 2.4rem; line-height: 1; }
+.gauge-scale { font-size: 0.78rem; color: var(--faint); }
+.gauge-label { margin-top: 0.55rem; font-size: 0.84rem; font-weight: 600; }
+.gauge-band {
+  margin-top: 0.35rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.18rem 0.6rem;
+  border-radius: 999px;
+  color: var(--band);
+  border: 1px solid color-mix(in srgb, var(--band) 45%, transparent);
+  background: color-mix(in srgb, var(--band) 10%, transparent);
+}
+.gauge-summary { margin-top: 0.5rem; font-size: 0.72rem; color: var(--faint); line-height: 1.4; }
+.cr-metrics { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.6rem; }
+@media (min-width: 640px) { .cr-metrics { grid-template-columns: repeat(3, 1fr); } }
+.cr-tile { padding: 0.85rem 0.95rem; border-radius: var(--radius-sm); background: rgb(0 0 0 / 0.18); border: 1px solid var(--line); min-width: 0; }
+.cr-label { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.cr-value { margin-top: 0.4rem; font-family: var(--font-head); font-size: clamp(1.4rem, 3.4vw, 1.75rem); line-height: 1.05; }
+.cr-value small { margin-left: 0.25rem; font-family: var(--font-body); font-size: 0.8rem; color: var(--faint); }
+.cr-sub { margin-top: 0.4rem; font-size: 0.74rem; color: var(--faint); line-height: 1.4; overflow-wrap: anywhere; }
+.cr-na .cr-value { color: var(--faint); }
+.cr-note { margin-top: 1rem; font-size: 0.76rem; color: var(--faint); display: flex; gap: 0.4rem; align-items: flex-start; }
+.cr-note .icon { margin-top: 0.15rem; flex-shrink: 0; }
 
 .token-box { padding: 0.8rem 1rem; border-radius: var(--radius-sm); background: rgb(0 0 0 / 0.35); border: 1px dashed var(--accent); overflow-wrap: anywhere; }
 

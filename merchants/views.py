@@ -152,7 +152,7 @@ def dashboard(request):
         "unpaid_count": len(unpaid),
         "unpaid_total": sum((i.outstanding for i in unpaid), 0),
         "overdue_count": sum(1 for i in unpaid if i.due_date < today()),
-        "findings": data.get("data_quality", {}).get("findings", [])[:6],
+        "findings": data.get("data_quality", {}).get("findings", [])[:4],
         "has_sources": ConnectedSource.objects.filter(business=business).exists(),
         "has_records": business.transactions.exists(),
         "prev_month": label(add_months(month_start(today()), -1)),
