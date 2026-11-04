@@ -25,6 +25,7 @@ Authorization: Bearer <key_id>.<secret>
 | `financial_summary:read` | `GET businesses/{id}/financial-summary` |
 | `verification_summary:read` | `GET businesses/{id}/verification-summary` |
 | `data_quality:read` | `GET businesses/{id}/data-quality` |
+| `credit_metrics:read` | `GET businesses/{id}/credit-metrics` |
 | `receipts:read` | `GET receipts` |
 
 ## What happens on every request
@@ -45,6 +46,7 @@ is null unless `profile` is consented.
 ### `GET /api/v1/businesses/{business_id}/financial-summary?from=YYYY-MM&to=YYYY-MM`
 ### `GET /api/v1/businesses/{business_id}/verification-summary`
 ### `GET /api/v1/businesses/{business_id}/data-quality`
+### `GET /api/v1/businesses/{business_id}/credit-metrics`
 
 `from` and `to` are optional and default to the consented period. They must fall inside it.
 
@@ -56,7 +58,7 @@ Every response carries this `meta` block:
   "business_id": "…",
   "period": {"start": "2025-11-01", "end": "2026-10-31", "months": 12, "months_with_records": 12},
   "includes_demo_data": true,
-  "calculation_version": "2026.1",
+  "calculation_version": "2026.2",
   "report_version": 7,
   "consent_reference": "CNS-…",
   "receipt_reference": "RCPT-…",
@@ -78,8 +80,22 @@ evidence-supported and self-reported records. Each class has an amount, count, p
 amount. The response also gives the explicit `denominator`, a document review summary and the
 connected `sources` (with `is_demo`).
 
-`data-quality` returns missing months, reconciliation status and neutral `findings`, with any
-merchant notes attached.
+`data-quality` returns missing months, reconciliation status and neutral `findings`, counted by
+type and month. Notes the business wrote to explain an indicator are included, except for disputes.
+
+`credit-metrics` returns `credit_metrics.scores[]` (Evidence strength and Data completeness, 0–100)
+and `credit_metrics.metrics[]`: operating cash margin, months with operating surplus, revenue
+stability, debt service coverage, receivable days and cash buffer. Each item has `available`,
+`value`, `unit`, its `inputs` (with `unit: "ETB"` on money amounts), a `basis`, and a `reason` when it
+can't be calculated. These are indicators, **not a credit score or recommendation**; there is no
+composite number.
+
+### Privacy: aggregates only
+
+Everything an institution receives through the API, portal or PDF contains aggregates and metrics
+only. That includes no individual transactions, documents, counterparties, or notes about a
+specific record. Obligations are totalled by type. The business's own passport view keeps the full
+detail.
 
 ### `GET /api/v1/businesses/{business_id}/consent-status`
 Returns `active`, `revoked` or `expired`, with the consent's scope, for any consent this business

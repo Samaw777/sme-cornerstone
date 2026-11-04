@@ -180,7 +180,8 @@ STORAGES = {
         else "whitenoise.storage.CompressedManifestStaticFilesStorage"
     },
 }
-WHITENOISE_USE_FINDERS = ON_VERCEL
+# Serve straight from static/ on Vercel and in local development (no stale collectstatic copy).
+WHITENOISE_USE_FINDERS = ON_VERCEL or DEBUG
 
 # Supporting documents are stored in the database (see ledger.DocumentBlob), never
 # under a public URL, and are only streamed back through an authorised view.

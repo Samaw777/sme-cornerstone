@@ -184,3 +184,9 @@ def monthly_chart(monthly, kind="revenue_expenses"):
                            "year": m["label"].split()[-1][-2:]})
     return {"width": width, "height": height, "bars": bars, "grid": grid, "labels": labels, "pad_left": pad_left,
             "label_y": height - 8, "kind": kind}
+
+
+@register.filter
+def key_label(value):
+    """'average_monthly_revenue' -> 'Average monthly revenue'."""
+    return str(value).replace("_", " ").capitalize()

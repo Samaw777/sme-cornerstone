@@ -8,6 +8,7 @@ urlpatterns = [
     path("businesses/<str:business_id>/financial-summary", views.financial_summary, name="api_financial_summary"),
     path("businesses/<str:business_id>/verification-summary", views.verification_summary, name="api_verification_summary"),
     path("businesses/<str:business_id>/data-quality", views.data_quality, name="api_data_quality"),
+    path("businesses/<str:business_id>/credit-metrics", views.credit_metrics, name="api_credit_metrics"),
     path("businesses/<str:business_id>/consent-status", views.consent, name="api_consent_status"),
     path("receipts", views.receipts, name="api_receipts"),
 ]

@@ -697,6 +697,13 @@ details.disclosure > .disclosure-body { padding: 0 1rem 1rem; }
 .finding p { font-size: 0.84rem; color: var(--muted); margin-top: 0.15rem; }
 .finding .merchant-note { margin-top: 0.4rem; padding: 0.45rem 0.7rem; border-left: 2px solid var(--accent); font-size: 0.82rem; background: rgb(230 184 92 / 0.05); }
 
+.score { padding: 0.9rem 1rem; border-radius: var(--radius-sm); border: 1px solid var(--line); background: rgb(0 0 0 / 0.14); }
+.score-label { font-size: 0.86rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.45rem; flex-wrap: wrap; }
+.score-value { font-family: var(--font-head); font-size: 1.6rem; line-height: 1; }
+.score-value small { font-family: var(--font-body); font-size: 0.78rem; color: var(--faint); }
+.meter-bar { height: 8px; margin-top: 0.7rem; border-radius: 999px; background: var(--line); overflow: hidden; }
+.meter-bar span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--ev-derived), #d6c9ff); }
+
 .token-box { padding: 0.8rem 1rem; border-radius: var(--radius-sm); background: rgb(0 0 0 / 0.35); border: 1px dashed var(--accent); overflow-wrap: anywhere; }
 
 /* ---------- Pagination ---------- */

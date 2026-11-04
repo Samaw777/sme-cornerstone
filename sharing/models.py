@@ -17,6 +17,7 @@ class DataCategory(models.TextChoices):
     VERIFICATION_SUMMARY = "verification_summary", _("Evidence and verification breakdown")
     DATA_QUALITY = "data_quality", _("Data-quality indicators")
     RECEIVABLES_OBLIGATIONS = "receivables_obligations", _("Recorded receivables and obligations")
+    CREDIT_METRICS = "credit_metrics", _("Credit-relevant metrics")
     PASSPORT_PDF = "passport_pdf", _("Download of the passport PDF")
 
 
@@ -26,6 +27,7 @@ CATEGORY_HELP = {
     DataCategory.VERIFICATION_SUMMARY: _("How much of the recorded activity is system-verified, evidence-supported or self-reported."),
     DataCategory.DATA_QUALITY: _("Missing months, reconciliation differences, unusual changes and similar neutral indicators."),
     DataCategory.RECEIVABLES_OBLIGATIONS: _("Outstanding invoice totals and recurring obligations you have recorded."),
+    DataCategory.CREDIT_METRICS: _("Ratios such as operating margin, debt service coverage, revenue stability and receivable days, plus evidence-strength and data-completeness scores. Not a credit score."),
     DataCategory.PASSPORT_PDF: _("Lets the institution download a copy. A downloaded copy can't be recalled by revoking consent."),
 }
 
@@ -72,6 +74,7 @@ class PartnerCredential(models.Model):
         QUALITY = "data_quality:read", _("Data-quality summary")
         CONSENT = "consent:read", _("Consent status")
         RECEIPTS = "receipts:read", _("Audit receipts")
+        CREDIT = "credit_metrics:read", _("Credit-relevant metrics")
 
     institution = models.ForeignKey(FinancialInstitution, on_delete=models.CASCADE, related_name="credentials")
     label = models.CharField(max_length=80)

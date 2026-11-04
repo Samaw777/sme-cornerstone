@@ -62,6 +62,13 @@
 </div>
 
 <section class="card mt-2">
+  <div class="card-head"><div><p class="card-title">{% icon "gauge" 16 %} Credit-relevant metrics</p>
+    <p class="card-sub">What a lender would look at, from your records. Share them only if you choose to.</p></div>
+    <a class="chip" href="{% url 'passport' %}">In your passport</a></div>
+  {% include "passport/_credit.html" with cm=data.credit_metrics %}
+</section>
+
+<section class="card mt-2">
   <div class="card-head"><p class="card-title">{% icon "alert" 16 %} Data-quality alerts</p><a class="chip" href="{% url 'findings' %}">See all</a></div>
   {% for f in findings %}
     <div class="finding"><strong>{{ f.title }}</strong> <span class="chip">{{ f.type }}</span><p>{{ f.detail }}</p></div>

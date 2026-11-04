@@ -28,6 +28,8 @@ from ledger.models import (
 from merchants.models import IdentityStatus
 from sharing.models import DataCategory
 
+from . import credit
+
 CALCULATION_VERSION = quality.CALCULATION_VERSION
 DISCLAIMER = "This report provides financial evidence and is not a credit decision."
 MIN_MONTHS_FOR_TREND = 6
@@ -50,6 +52,8 @@ METHODS = [
     ("Receivables", "Open invoice amounts less recorded payments, as of the report date, aged by days past the due date."),
     ("Obligations", "Recurring obligations recorded by the business that are current at the report date, converted to a monthly equivalent. Obligations outside the platform are not discovered."),
     ("Data quality", "Neutral checks for missing months, unusual changes (≥50% vs the prior 3-month average), possible duplicates, statement reconciliation differences, large undocumented records and open disputes."),
+    *credit.METHODS,
+    ("Shared reports", "Reports shared with a bank or MFI contain aggregates and metrics only: data-quality indicators are counted by type and month, and obligations are totalled by type, so no individual record, counterparty or note about a specific record is disclosed."),
 ]
 
 
@@ -63,8 +67,12 @@ def pct(part, whole):
     return str((Decimal(part) / Decimal(whole) * 100).quantize(Decimal("0.1"), rounding=ROUND_HALF_UP))
 
 
-def compute(business, start, end, categories=None, *, as_of=None, sharing=None):
-    """Build the passport dictionary for one business and period."""
+def compute(business, start, end, categories=None, *, as_of=None, sharing=None, audience="merchant"):
+    """Build the passport dictionary for one business and period.
+
+    audience="institution" is used for everything a bank/MFI receives: it keeps
+    aggregates and metrics only, with no record-level detail."""
+    for_institution = audience == "institution"
     categories = [c for c in (categories or ALL_CATEGORIES) if c in ALL_CATEGORIES]
     as_of = as_of or timezone.now()
     report_day = today()
@@ -127,6 +135,7 @@ def compute(business, start, end, categories=None, *, as_of=None, sharing=None):
         "sections": categories,
         "includes_demo_data": any(t.is_demo for t in txns),
         "sharing": sharing,
+        "audience": "institution" if for_institution else "merchant",
     }
 
     if DataCategory.PROFILE in categories:
@@ -146,10 +155,13 @@ def compute(business, start, end, categories=None, *, as_of=None, sharing=None):
 
     if DataCategory.RECEIVABLES_OBLIGATIONS in categories:
         data["receivables"] = receivables(business, report_day)
-        data["obligations"] = obligations(business, report_day)
+        data["obligations"] = obligations(business, report_day, aggregate=for_institution)
 
     if DataCategory.DATA_QUALITY in categories:
-        data["data_quality"] = data_quality(business, start, end, missing, unknown_before)
+        data["data_quality"] = data_quality(business, start, end, missing, unknown_before, aggregate=for_institution)
+
+    if DataCategory.CREDIT_METRICS in categories:
+        data["credit_metrics"] = credit.compute(business, txns, monthly, report_day, start, end)
 
     data["methods"] = [{"metric": m, "method": d} for m, d in METHODS]
     data["limitations"] = limitations(data, missing, txns, business)
@@ -257,8 +269,21 @@ def receivables(business, on):
             "note": "Invoices recorded by the business on this platform only."}
 
 
-def obligations(business, on):
+def obligations(business, on, aggregate=False):
     items = [o for o in RecurringObligation.objects.filter(business=business) if o.is_current(on)]
+    if aggregate:
+        # Totals by type only: no names, counterparties or dates of individual obligations.
+        by_kind = defaultdict(list)
+        for o in items:
+            by_kind[o.get_kind_display()].append(o)
+        return {
+            "items": [{"name": f"{kind} ({len(group)})", "type": kind, "counterparty": None,
+                       "amount": money(sum((o.monthly_equivalent for o in group), ZERO)), "frequency": "Monthly (combined)",
+                       "monthly_equivalent": money(sum((o.monthly_equivalent for o in group), ZERO)), "since": None, "until": None}
+                      for kind, group in sorted(by_kind.items())],
+            "monthly_equivalent_total": money(sum((o.monthly_equivalent for o in items), ZERO)),
+            "note": "Recorded by the business; totalled by type. The platform does not discover obligations held outside it.",
+        }
     return {
         "items": [{"name": o.name, "type": o.get_kind_display(), "counterparty": o.counterparty, "amount": money(o.amount),
                    "frequency": o.get_frequency_display(), "monthly_equivalent": money(o.monthly_equivalent),
@@ -269,7 +294,35 @@ def obligations(business, on):
     }
 
 
-def data_quality(business, start, end, missing, unknown_before):
+AGGREGATE_FINDING_TEXT = {
+    "missing_month": "No income or expenses are recorded for this month; its figures are unknown, not zero.",
+    "unusual_change": "Revenue or operating expenses moved by 50% or more against the prior 3-month average.",
+    "possible_duplicate": "Records with the same date, amount and direction that may be one transaction recorded twice.",
+    "reconciliation_gap": "The connected account statement and the synced records differ for this month.",
+    "missing_document": "Records of ETB 10,000 or more without a supporting document.",
+    "open_dispute": "The business has disputed a record; the original record is preserved.",
+    "future_dated": "A record is dated in the future.",
+}
+
+
+def _aggregate_findings(findings):
+    """For institutions: counts by type and month. No amounts, dates or notes
+    that point to an individual record."""
+    groups = defaultdict(list)
+    for f in findings:
+        groups[(f.code, f.month)].append(f)
+    rows = []
+    for (code, month), group in sorted(groups.items(), key=lambda kv: (kv[0][1] or month_start(today()), kv[0][0]), reverse=True):
+        notes = [f.merchant_note for f in group if f.merchant_note and code != "open_dispute"]
+        rows.append({"code": code, "type": group[0].get_code_display(),
+                     "title": f"{group[0].get_code_display()}{f' — {label(month)}' if month else ''}" + (f" ({len(group)})" if len(group) > 1 else ""),
+                     "detail": AGGREGATE_FINDING_TEXT.get(code, ""), "month": month.strftime("%Y-%m") if month else None,
+                     "count": len(group), "status": "Explained by the business" if notes else "Open",
+                     "merchant_note": " / ".join(notes) or None})
+    return rows
+
+
+def data_quality(business, start, end, missing, unknown_before, aggregate=False):
     findings = quality.open_findings(business, start, end)
     sources = ConnectedSource.objects.filter(business=business)
     gaps = [f for f in findings if f.code == "reconciliation_gap"]
@@ -283,9 +336,10 @@ def data_quality(business, start, end, missing, unknown_before):
         "missing_months": missing,
         "before_recorded_history": unknown_before,
         "reconciliation": reconciliation,
-        "findings": [{"code": f.code, "type": f.get_code_display(), "title": f.title, "detail": f.detail,
-                      "month": f.month.strftime("%Y-%m") if f.month else None, "status": f.get_status_display(),
-                      "merchant_note": f.merchant_note or None} for f in findings],
+        "findings": _aggregate_findings(findings) if aggregate else [
+            {"code": f.code, "type": f.get_code_display(), "title": f.title, "detail": f.detail,
+             "month": f.month.strftime("%Y-%m") if f.month else None, "status": f.get_status_display(),
+             "merchant_note": f.merchant_note or None} for f in findings],
         "note": "Indicators are neutral observations to guide review. They are not findings of error, fraud or creditworthiness.",
     }
 

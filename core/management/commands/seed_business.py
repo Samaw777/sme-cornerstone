@@ -95,9 +95,9 @@ class Command(BaseCommand):
         for i, month in enumerate(months):
             # Freight income: busier from October to January (harvest and import season).
             busy = 1.3 if month.month in (10, 11, 12, 1) else 1.0
-            for _ in range(rng.randint(5, 8)):
+            for _ in range(rng.randint(7, 10)):
                 shipper = rng.choice(shippers)
-                amount = Decimal(rng.randint(60, 180) * 100) * Decimal(str(busy))
+                amount = Decimal(rng.randint(90, 220) * 100) * Decimal(str(busy))
                 self.record(business, user, self.day_in(month), "in", "service_income", amount.quantize(Decimal("1")),
                             "Freight delivery — Addis to regions", shipper)
             # Monthly running costs.

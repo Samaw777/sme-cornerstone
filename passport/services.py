@@ -39,7 +39,9 @@ def generate(business, start, end, *, user=None, consent=None, categories=None):
         start = start or consent.period_start
         end = end or consent.period_end
         categories = categories or consent.categories
-    data = metrics.compute(business, start, end, categories, sharing=sharing_block(consent))
+    # Anything generated under a consent goes to an institution: aggregates and metrics only.
+    data = metrics.compute(business, start, end, categories, sharing=sharing_block(consent),
+                           audience="merchant" if consent is None else "institution")
     digest = metrics.content_hash(data)
     if consent is not None:
         same = PassportSnapshot.objects.filter(business=business, consent=consent, content_sha256=digest).first()

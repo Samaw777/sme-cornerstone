@@ -51,17 +51,19 @@ connection; there is no offline mode.
 - **Connected sources**: the demo connector, with idempotent sync and statement balances for reconciliation.
 - **Data quality**: missing months, unusual changes, possible duplicates, reconciliation differences, large undocumented records, open disputes and future dates. All wording is neutral, and merchants can add explanations.
 - **Business Financial Passport**: live preview, frozen versioned snapshots, PDF download and print.
+- **Credit-relevant metrics** (dashboard and passport): operating cash margin, months with operating surplus, revenue stability, debt service coverage, receivable days and cash buffer. There are also Evidence Strength and Data Completeness scores (0–100). Each shows its method and inputs, says when it can't be calculated, and stops short of a verdict. No composite credit score.
 - **Sharing and access**: authorise an institution in two steps (scope, then review), revoke, and see access receipts, blocked attempts and support access.
 
 ### Bank/MFI analyst portal
 - Lists only authorised businesses.
 - Shows the passport limited to the consented sections, plus a PDF if consented.
 - Each view creates an access receipt and shows its reference.
+- **Aggregates and metrics only.** Institutions never see individual records, documents or counterparties. Data-quality indicators are counted by type and month, and obligations are totalled by type.
 - Receipts list for the institution.
 
 ### Partner API (v1)
 Versioned, read-only and institution-scoped. Endpoints: profile, financial summary, verification
-summary, data quality, consent status and audit receipts. See [docs/API.md](docs/API.md).
+summary, data quality, credit metrics, consent status and audit receipts. See [docs/API.md](docs/API.md).
 
 ### Platform console
 Overview and audit log, businesses (identity validation, support access, document review),
@@ -160,7 +162,7 @@ python manage.py seed_business "Your Business Name" --remove
 python manage.py test
 ```
 
-There are 57 tests in `tests/`. They cover these acceptance criteria:
+There are 64 tests in `tests/`. They cover these acceptance criteria:
 
 | Criterion | Tests |
 | --- | --- |

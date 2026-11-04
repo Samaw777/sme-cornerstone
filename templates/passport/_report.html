@@ -87,6 +87,14 @@
   </section>
   {% endif %}
 
+  {% if data.credit_metrics %}
+  <section class="card report-section">
+    <h3>{% icon "gauge" 16 %} Credit-relevant metrics {% evidence_badge "derived" %}</h3>
+    <p class="section-note">Ratios calculated from the counted records with the methods listed below. Indicators only — not a credit score or decision.</p>
+    <div class="mt-2">{% include "passport/_credit.html" with cm=data.credit_metrics %}</div>
+  </section>
+  {% endif %}
+
   {% if data.evidence %}
   <section class="card report-section">
     <h3>{% icon "shield-check" 16 %} Evidence breakdown</h3>
@@ -134,7 +142,7 @@
   {% if data.data_quality %}
   <section class="card report-section">
     <h3>{% icon "alert" 16 %} Data-quality indicators</h3>
-    <p class="section-note">{{ data.data_quality.note }}</p>
+    <p class="section-note">{{ data.data_quality.note }}{% if data.audience == "institution" %} Shown as counts by type and month; individual records aren't shared.{% endif %}</p>
     <dl class="facts mt-2">
       <dt>Reconciliation</dt><dd>{{ data.data_quality.reconciliation }}</dd>
       <dt>Months without records</dt><dd>{{ data.data_quality.missing_months|join:", "|default:"None" }}</dd>

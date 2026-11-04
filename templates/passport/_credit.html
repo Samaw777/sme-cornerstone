@@ -1,0 +1,21 @@
+{% load ui %}
+{# Credit-relevant metrics: indicators with methods and inputs, no verdict. `cm` is data.credit_metrics. #}
+<div class="grid-2">
+  {% for s in cm.scores %}
+  <div class="score">
+    <div class="row-between"><span class="score-label">{{ s.label }} {% evidence_badge "derived" %}</span>
+      <span class="score-value">{% if s.available %}{{ s.value }}<small>/100</small>{% else %}<span class="unknown">Not calculated</span>{% endif %}</span></div>
+    {% if s.available %}<div class="meter-bar" role="img" aria-label="{{ s.label }} {{ s.value }} out of 100"><span style="width: {{ s.value }}%"></span></div>{% endif %}
+    <p class="tiny faint mt-1">{% if s.available %}{% for i in s.inputs %}{{ i.key|key_label }} {{ i.value }}{% if not forloop.last %} · {% endif %}{% endfor %}{% if s.basis %} · {{ s.basis }}{% endif %}{% else %}{{ s.reason }}{% endif %}</p>
+  </div>
+  {% endfor %}
+</div>
+<div class="mt-2">
+  {% for m in cm.metrics %}
+  <div class="derived-row">
+    <span>{{ m.label }}{% if m.available %}<br><small class="faint">{% for i in m.inputs %}{{ i.key|key_label }}: {% if i.unit == "ETB" %}{{ i.value|etb_plain }}{% else %}{{ i.value }}{% endif %}{% if not forloop.last %} · {% endif %}{% endfor %}{% if m.basis %} · {{ m.basis }}{% endif %}</small>{% endif %}</span>
+    {% if m.available %}<strong class="nowrap">{{ m.value }}{% if m.unit %} {{ m.unit }}{% endif %}</strong>{% else %}<span class="muted small right" style="max-width:55%">Not calculated — {{ m.reason }}</span>{% endif %}
+  </div>
+  {% endfor %}
+</div>
+<p class="small muted mt-1">{{ cm.note }}</p>

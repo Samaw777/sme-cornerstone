@@ -169,6 +169,11 @@ def data_quality(request, credential, business_id):
     return _scoped(request, credential, business_id, DataCategory.DATA_QUALITY, "api:data_quality", ["data_quality"])
 
 
+@endpoint(PartnerCredential.Scope.CREDIT)
+def credit_metrics(request, credential, business_id):
+    return _scoped(request, credential, business_id, DataCategory.CREDIT_METRICS, "api:credit_metrics", ["credit_metrics"])
+
+
 @endpoint(PartnerCredential.Scope.CONSENT)
 def consent(request, credential, business_id):
     business = _business(request, credential, business_id)

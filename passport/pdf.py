@@ -136,6 +136,23 @@ def render(snapshot):
         ]
         story += [Spacer(1, 4)] + [Paragraph(line + " [Derived metric]", s["body"]) for line in lines]
 
+    if "credit_metrics" in data:
+        cm = data["credit_metrics"]
+
+        def shown(m):
+            return f"{m['value']} {m['unit']}".strip() if m["available"] else f"Not calculated — {m['reason']}"
+
+        def inputs(m):
+            return " · ".join(f"{i['key'].replace('_', ' ').capitalize()}: {_money(i['value']) if i['unit'] == 'ETB' else i['value']}"
+                              for i in m["inputs"]) + (f" · {m['basis']}" if m["basis"] else "")
+
+        rows = [["Metric [Derived]", "Value", "Inputs"]] + [
+            [Paragraph(m["label"], s["body"]), Paragraph(shown(m), s["body"]), Paragraph(inputs(m) if m["available"] else "", s["small"])]
+            for m in cm["scores"] + cm["metrics"]]
+        story += [Paragraph("Credit-relevant metrics", s["h2"]),
+                  _table(rows, [45 * mm, 45 * mm, width - 90 * mm], align_right_from=None),
+                  Paragraph(cm["note"], s["small"])]
+
     if "evidence" in data:
         e = data["evidence"]
         rows = [["Evidence class", "Amount", "Share", "Records", "Of which demo"]]
