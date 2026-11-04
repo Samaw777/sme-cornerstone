@@ -6,7 +6,7 @@
 <header class="page-header">
   <a class="back" href="{% url 'import_list' %}">{% icon "arrow-left" 14 %} CSV import</a>
   <h1>Map columns</h1>
-  <p>Tell us which column holds what in <strong>{{ batch.filename }}</strong>. We've guessed where we could.</p>
+  <p>Match the columns in <strong>{{ batch.filename }}</strong>.</p>
 </header>
 {% include "ledger/_import_steps.html" with step=2 %}
 

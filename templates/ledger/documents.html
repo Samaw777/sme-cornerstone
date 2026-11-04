@@ -5,7 +5,7 @@
 {% block content %}
 <header class="page-header">
   <p class="eyebrow">Records</p><h1>Documents</h1>
-  <p>Receipts, invoices and statements stored privately with your business. They're never shared with banks or MFIs — the passport only reports how many records they support and their validation status.</p>
+  <p>Private to your business. Never sent to banks.</p>
 </header>
 <div class="grid-2">
   {% if can_upload %}
@@ -14,7 +14,6 @@
     <p class="card-title mb-2">{% icon "upload" 16 %} Upload</p>
     {% include "_field.html" with field=form.file %}
     <div class="field-row">{% include "_field.html" with field=form.kind %}{% include "_field.html" with field=form.title %}</div>
-    <p class="help mb-2">Uploading checks the file type and size. That doesn't validate what the document says — the status shows that separately.</p>
     <button class="btn btn-primary" type="submit">Upload</button>
   </form>
   {% endif %}

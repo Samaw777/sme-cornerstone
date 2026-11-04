@@ -6,7 +6,7 @@
 <header class="page-header">
   <a class="back" href="{% url 'quick_add' %}">{% icon "arrow-left" 14 %} Quick add</a>
   <h1>Paste bank or telebirr SMS</h1>
-  <p>Copy transaction messages from your phone and paste them here — one or many, with a blank line between messages. We read the amount, date, reference and direction; you check before saving. Each reference is saved once, so pasting the same SMS again won't double count.</p>
+  <p>Paste one or more messages. Each is saved only once.</p>
 </header>
 
 {% if not drafts %}
@@ -14,7 +14,6 @@
   {% csrf_token %}
   <div class="field"><label class="label" for="sms-text">Messages</label>
     <textarea id="sms-text" name="text" rows="9" required placeholder="e.g. Your account has been credited with ETB 25,000.00 from … Ref No FT26307ABC12 …">{{ text }}</textarea></div>
-  <div class="notice notice-info mb-2">{% icon "info" 16 %}<span>Pasted SMS are recorded as <strong>self-reported</strong>: a copied message isn't an authorised bank feed. Messages are kept with the record as its original source.</span></div>
   <button class="btn btn-primary" type="submit">Read messages {% icon "arrow-right" 16 %}</button>
 </form>
 {% else %}

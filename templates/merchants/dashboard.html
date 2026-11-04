@@ -19,16 +19,15 @@
 {% include "_period.html" %}
 
 {% if pending_count %}
-<div class="notice notice-info mt-2 alert-band">{% icon "circle-check" 16 %}<span style="flex:1">{{ pending_count }} entr{{ pending_count|pluralize:"y,ies" }} from staff {{ pending_count|pluralize:"is,are" }} waiting for your approval. They don't count until approved.</span><a class="btn btn-secondary btn-sm" href="{% url 'approvals' %}">Review</a></div>
+<div class="notice notice-info mt-2 alert-band">{% icon "circle-check" 16 %}<span style="flex:1">{{ pending_count }} entr{{ pending_count|pluralize:"y,ies" }} to approve</span><a class="btn btn-secondary btn-sm" href="{% url 'approvals' %}">Review</a></div>
 {% elif my_pending %}
-<div class="notice notice-info mt-2">{% icon "info" 16 %}<span>{{ my_pending }} of your entr{{ my_pending|pluralize:"y is,ies are" }} waiting for an approver.</span></div>
+<div class="notice notice-info mt-2">{% icon "info" 16 %}<span>{{ my_pending }} of your entr{{ my_pending|pluralize:"y is,ies are" }} awaiting approval</span></div>
 {% endif %}
 
 {% if not has_records %}
 <div class="card empty mt-2">
   <span class="empty-icon">{% icon "sparkles" 22 %}</span>
   <strong>Let's build your financial history</strong>
-  <p>Record a sale or expense, import a CSV export from your phone or spreadsheet, or connect a source. Every record makes your passport more complete.</p>
   <div class="row">
     <a class="btn btn-primary" href="{% url 'quick_add' %}">{% icon "plus" 16 %} Log a transaction</a>
     <a class="btn btn-secondary" href="{% url 'import_list' %}">{% icon "upload" 16 %} Import CSV</a>
@@ -41,7 +40,6 @@
     <div>
       <p class="eyebrow">Credit metrics report · {{ data.period.label }}</p>
       <h2 class="cr-title">{{ business.name }}</h2>
-      <p class="card-sub">What a lender looks at, calculated from your records. Banks see it only if you share it.</p>
     </div>
     <div class="cr-meta">
       <span class="chip">Method {{ data.calculation_version }}</span>
@@ -54,7 +52,7 @@
 
 {% if bills %}
 <section class="card mt-2">
-  <div class="card-head"><div><p class="card-title">{% icon "calendar" 16 %} Bills due</p><p class="card-sub">From the obligations you recorded. One tap records the payment.</p></div>
+  <div class="card-head"><p class="card-title">{% icon "calendar" 16 %} Bills due</p>
     <a class="chip" href="{% url 'receivables' %}">All obligations</a></div>
   {% for b in bills %}
   <div class="bill">
@@ -71,14 +69,14 @@
 {% endif %}
 
 <section class="stats mt-2">
-  <div class="card"><p class="stat-label">{% icon "trending-up" 14 %} Revenue</p><p class="stat-value">{{ data.totals.revenue|etb }}</p><p class="stat-note">{{ data.period.months_with_records }} of {{ data.period.months }} months recorded</p></div>
-  <div class="card"><p class="stat-label">{% icon "trending-down" 14 %} Operating expenses</p><p class="stat-value">{{ data.totals.operating_expenses|etb }}</p><p class="stat-note">Stock, rent, wages, utilities…</p></div>
-  <div class="card"><p class="stat-label">{% icon "wallet" 14 %} Net cash movement</p><p class="stat-value">{{ data.totals.net_cash_movement|etb }}</p><p class="stat-note">All money in minus all money out — not profit</p></div>
+  <div class="card"><p class="stat-label">{% icon "trending-up" 14 %} Revenue</p><p class="stat-value">{{ data.totals.revenue|etb }}</p><p class="stat-note">{{ data.period.months_with_records }}/{{ data.period.months }} months</p></div>
+  <div class="card"><p class="stat-label">{% icon "trending-down" 14 %} Operating expenses</p><p class="stat-value">{{ data.totals.operating_expenses|etb }}</p><p class="stat-note">Running costs</p></div>
+  <div class="card"><p class="stat-label">{% icon "wallet" 14 %} Net cash movement</p><p class="stat-value">{{ data.totals.net_cash_movement|etb }}</p><p class="stat-note">Not profit</p></div>
   <a class="card" href="{% url 'receivables' %}"><p class="stat-label">{% icon "receipt" 14 %} Unpaid invoices</p><p class="stat-value">{{ unpaid_total|etb }}</p><p class="stat-note">{{ unpaid_count }} open{% if overdue_count %} · <span class="neg">{{ overdue_count }} overdue</span>{% endif %}</p></a>
 </section>
 
-{% if data.period.months_with_records < data.period.months %}
-<div class="notice notice-warn mt-2">{% icon "info" 16 %}<span>{{ data.totals.basis }} {% if data.data_quality.missing_months %}Missing: {{ data.data_quality.missing_months|join:", " }}.{% endif %}</span></div>
+{% if data.data_quality.missing_months %}
+<div class="notice notice-warn mt-2">{% icon "info" 16 %}<span>No records for {{ data.data_quality.missing_months|join:", "|default:"some months" }} — shown as unknown.</span></div>
 {% endif %}
 
 <div class="grid-2 mt-2">
@@ -88,27 +86,25 @@
   </section>
   <section class="card">
     <div class="card-head"><div><p class="card-title">{% icon "shield-check" 16 %} Evidence coverage</p>
-      <p class="card-sub">Share of {{ data.evidence.denominator_amount|etb_plain }} recorded (money in + out)</p></div>
-      <a class="chip" href="{% url 'glossary' %}">What do these mean?</a></div>
+      </div>
+      <a class="chip" href="{% url 'glossary' %}">?</a></div>
     <div class="ev-bar" role="img" aria-label="Evidence coverage">{% for row in data.evidence.by_class %}{% if row.percent %}<span class="{{ row.class|evidence_css }}" style="width: {{ row.percent }}%"></span>{% endif %}{% endfor %}</div>
     <div class="mt-2">
       {% for row in data.evidence.by_class %}
       <div class="derived-row"><span>{% evidence_badge row.class %} <small class="faint">{{ row.count }} records</small></span><span>{{ row.amount|etb }} <span class="faint small">{{ row.percent|percent }}</span></span></div>
       {% endfor %}
     </div>
-    {% if data.evidence.demo_amount != "0.00" %}<p class="small mt-1"><span class="badge badge-demo">Demo</span> {{ data.evidence.demo_amount|etb_plain }} comes from a demo source or seed data.</p>{% endif %}
-    {% if not has_sources %}<p class="small muted mt-1">Nothing is system-verified until an authorised source is connected. <a class="link" href="{% url 'sources' %}">Connected sources</a></p>{% endif %}
+    {% if data.evidence.demo_amount != "0.00" %}<p class="small mt-1"><span class="badge badge-demo">Demo</span> {{ data.evidence.demo_amount|etb_plain }} is demo data</p>{% endif %}
   </section>
 </div>
 
 <section class="card mt-2">
-  <div class="card-head"><p class="card-title">{% icon "alert" 16 %} Data-quality alerts</p><a class="chip" href="{% url 'findings' %}">See all</a></div>
+  <div class="card-head"><p class="card-title">{% icon "alert" 16 %} To check</p><a class="chip" href="{% url 'findings' %}">See all</a></div>
   {% for f in findings %}
-    <div class="finding"><strong>{{ f.title }}</strong> <span class="chip">{{ f.type }}</span><p>{{ f.detail }}</p></div>
+    <div class="finding"><strong>{{ f.title }}</strong></div>
   {% empty %}
     <p class="muted small">{% icon "circle-check" 14 %} No open indicators for this period.</p>
   {% endfor %}
-  <p class="tiny faint mt-1">Indicators are neutral prompts to check your records — not judgements.</p>
 </section>
 {% endif %}
 {% endblock %}

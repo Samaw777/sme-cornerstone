@@ -89,7 +89,7 @@ class InstitutionPrivacyTests(Fixtures):
         self.login(self.owner)
         own = self.client.get(reverse("passport"))
         self.assertContains(own, "Truck loan")
-        self.assertContains(own, "Refund from Secret Supplier")
+        self.assertContains(self.client.get(reverse("findings")), "Refund from Secret Supplier")
 
     def test_api_credit_metrics_need_scope_and_category(self):
         _, token = PartnerCredential.issue(self.mfi, "t", [s.value for s in PartnerCredential.Scope])

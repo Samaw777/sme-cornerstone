@@ -825,6 +825,7 @@ details.disclosure > .disclosure-body { padding: 0 1rem 1rem; }
 .cr-value small { margin-left: 0.25rem; font-family: var(--font-body); font-size: 0.8rem; color: var(--faint); }
 .cr-sub { margin-top: 0.4rem; font-size: 0.74rem; color: var(--faint); line-height: 1.4; overflow-wrap: anywhere; }
 .cr-na .cr-value { color: var(--faint); }
+@media (max-width: 639px) { .cr-sub, .gauge-summary { display: none; } .cr-label { font-size: 0.66rem; } }
 .cr-note { margin-top: 1rem; font-size: 0.76rem; color: var(--faint); display: flex; gap: 0.4rem; align-items: flex-start; }
 .cr-note .icon { margin-top: 0.15rem; flex-shrink: 0; }
 

@@ -6,7 +6,7 @@
 <header class="page-header no-print">
   <a class="back" href="{% url 'passport' %}">{% icon "arrow-left" 14 %} Passport</a>
   <div class="row-between">
-    <div><h1>Passport v{{ snapshot.version }}</h1><p>Frozen on {{ snapshot.generated_at|date:"j M Y H:i" }}. Later changes to your records appear in new versions, not this one.</p></div>
+    <div><h1>Passport v{{ snapshot.version }}</h1><p>Saved {{ snapshot.generated_at|date:"j M Y H:i" }}.</p></div>
     <div class="row"><a class="btn btn-primary" href="{% url 'passport_pdf' snapshot.public_id %}">{% icon "download" 16 %} Download PDF</a><button class="btn btn-ghost" type="button" onclick="window.print()">Print</button></div>
   </div>
 </header>

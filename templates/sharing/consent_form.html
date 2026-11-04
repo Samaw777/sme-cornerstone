@@ -6,7 +6,7 @@
 <header class="page-header">
   <a class="back" href="{% url 'sharing' %}">{% icon "arrow-left" 14 %} Sharing &amp; access</a>
   <h1>Authorise an institution</h1>
-  <p>Choose exactly who can see what, for which period, and until when. You'll review everything before it takes effect.</p>
+  <p>You'll review before anything is shared.</p>
 </header>
 <form method="post" class="form card" style="max-width: 44rem">
   {% csrf_token %}
@@ -17,7 +17,7 @@
   {% include "_field.html" with field=form.categories help_map=category_help %}
   <div class="field-row">{% include "_field.html" with field=form.period_from %}{% include "_field.html" with field=form.period_to %}</div>
   {% include "_field.html" with field=form.expires_on %}
-  <div class="notice notice-info mb-2">{% icon "info" 16 %}<span>Institutions never get your individual transactions, documents or direct database access — only the summaries you tick, through audited views.</span></div>
+  <div class="notice notice-info mb-2">{% icon "lock" 16 %}<span>Banks see summaries only — never your records or documents.</span></div>
   <button class="btn btn-primary" type="submit">Review {% icon "arrow-right" 16 %}</button>
 </form>
 {% endblock %}

@@ -6,7 +6,7 @@
 <header class="page-header">
   <div class="row-between">
     <div><p class="eyebrow">Passport</p><h1>Business Financial Passport</h1>
-      <p>A standard report of your recorded history that you can save, download and choose to share. Preview it below, then generate a saved version.</p></div>
+      <p>Your report to save, download or share.</p></div>
     <div class="row no-print">
       <form method="post" action="{% url 'passport_generate' %}?{{ request.GET.urlencode }}">{% csrf_token %}<button class="btn btn-primary" type="submit">{% icon "passport" 16 %} Generate &amp; save</button></form>
       {% if can_share %}<a class="btn btn-secondary" href="{% url 'consent_new' %}">{% icon "shield-check" 16 %} Share with a bank/MFI</a>{% endif %}

@@ -5,10 +5,10 @@
 {% block content %}
 <header class="page-header">
   <p class="eyebrow">Records</p><h1>Connected sources</h1>
-  <p>Transactions synced from an authorised account are the only records classed as <strong>system-verified</strong>, because the source's own identifier and original event are preserved.</p>
+  <p>Accounts that feed verified records.</p>
 </header>
 
-<div class="notice notice-demo mb-2">{% icon "flask" 16 %}<span><strong>No live bank or wallet connection exists yet.</strong> The demo connector below generates synthetic data through the same interface a real connector will use. Everything it produces is labelled <span class="badge badge-demo">Demo</span> and is not real verification. A live connector needs a signed agreement, the partner's API specification and institution-issued credentials.</span></div>
+<div class="notice notice-demo mb-2">{% icon "flask" 16 %}<span>No live bank connection yet — the demo connector uses synthetic data, labelled <span class="badge badge-demo">Demo</span>.</span></div>
 
 {% for s in sources %}
 <section class="card">
@@ -22,7 +22,6 @@
 <section class="card empty">
   <span class="empty-icon">{% icon "plug" 22 %}</span>
   <strong>No sources connected</strong>
-  <p>Until a source is connected, all records are self-reported or evidence-supported, and statement reconciliation isn't possible.</p>
 </section>
 {% endfor %}
 

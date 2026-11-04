@@ -56,7 +56,7 @@ def detect(business):
     last_complete = add_months(month_start(now_day), -1)
     for month in months_between(first, last_complete) if first <= last_complete else []:
         if not count.get(month):
-            add(Code.MISSING_MONTH, month.strftime("%Y-%m"), month, f"No records for {label(month)}",
+            add(Code.MISSING_MONTH, month.strftime("%Y-%m"), month, f"No records · {label(month)}",
                 "No income or expenses are recorded for this month. Totals for it are shown as unknown, not zero.")
 
     months = sorted(count)
@@ -72,7 +72,7 @@ def detect(business):
             if abs(change) >= UNUSUAL_CHANGE_RATIO:
                 direction = "higher" if change > 0 else "lower"
                 add(Code.UNUSUAL_CHANGE, f"{line_name.lower()}:{month:%Y-%m}", month,
-                    f"{line_name} in {label(month)} {abs(change) * 100:.0f}% {direction} than the prior 3-month average",
+                    f"{line_name} {abs(change) * 100:.0f}% {direction} than usual · {label(month)}",
                     "This may reflect seasonality, a one-off event, or incomplete records for one of the months.")
 
     groups = defaultdict(list)
@@ -85,7 +85,7 @@ def detect(business):
         descriptions = {" ".join(t.description.lower().split()) for t in items}
         if len(kinds) > 1 or len(descriptions) == 1:
             key = "dup:" + ",".join(sorted(str(t.pk) for t in items))
-            add(Code.POSSIBLE_DUPLICATE, key[:80], month_start(day), f"{len(items)} similar records on {day:%d %b %Y}",
+            add(Code.POSSIBLE_DUPLICATE, key[:80], month_start(day), f"{len(items)} possible duplicates · {day:%d %b %Y}",
                 f"{len(items)} records of {fmt(amount)} on the same day from {', '.join(sorted(kinds))}. "
                 "They may be separate transactions or the same one recorded twice.")
 
@@ -99,7 +99,7 @@ def detect(business):
             gap = expected - by_month.get(balance.month, Decimal("0"))
             if abs(gap) >= Decimal("0.01"):
                 add(Code.RECONCILIATION_GAP, f"{source.pk}:{balance.month:%Y-%m}", balance.month,
-                    f"Statement and records differ by {fmt(abs(gap))} in {label(balance.month)}",
+                    f"Statement differs by {fmt(abs(gap))} · {label(balance.month)}",
                     f"The {source.display_name} statement shows a net movement of {fmt(expected)}, while synced records "
                     f"total {fmt(by_month.get(balance.month, Decimal('0')))}. An event may not have been delivered by the source.")
 
@@ -109,7 +109,7 @@ def detect(business):
             undocumented[month_start(t.occurred_on)].append(t)
     for month, items in undocumented.items():
         add(Code.MISSING_DOCUMENT, month.strftime("%Y-%m"), month,
-            f"{len(items)} record(s) of {fmt(LARGE_AMOUNT)} or more without a document in {label(month)}",
+            f"{len(items)} large record{'s' if len(items) != 1 else ''} without receipts · {label(month)}",
             "Linking a receipt or invoice would make these records evidence-supported.")
 
     disputes = Annotation.objects.filter(business=business, kind=Annotation.Kind.DISPUTE, is_open=True,
@@ -117,12 +117,12 @@ def detect(business):
     for annotation in disputes:
         t = annotation.transaction
         add(Code.OPEN_DISPUTE, f"dispute:{annotation.pk}", month_start(t.occurred_on),
-            f"Merchant disputes a record of {fmt(t.amount)} on {t.occurred_on:%d %b %Y}",
+            f"Disputed: {fmt(t.amount)} · {t.occurred_on:%d %b %Y}",
             f"Merchant note: {annotation.text[:300]}")
 
     for t in txns:
         if t.occurred_on > now_day:
-            add(Code.FUTURE_DATED, f"future:{t.pk}", month_start(t.occurred_on), f"Record dated {t.occurred_on:%d %b %Y} is in the future",
+            add(Code.FUTURE_DATED, f"future:{t.pk}", month_start(t.occurred_on), f"Future date · {t.occurred_on:%d %b %Y}",
                 "It is counted in its own month like any other record; check whether the date is right.")
     return found
 

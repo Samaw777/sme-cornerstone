@@ -5,7 +5,7 @@
 {% block content %}
 <header class="page-header">
   <p class="eyebrow">Records</p><h1>CSV import</h1>
-  <p>Bring in records from a spreadsheet, POS or wallet export. You'll map columns and review every row before anything is saved. Imported rows are <strong>self-reported</strong>, and rows already imported are skipped automatically.</p>
+  <p>Upload a spreadsheet export. You review every row first.</p>
 </header>
 {% include "ledger/_import_steps.html" with step=1 %}
 <div class="grid-2">
@@ -13,7 +13,6 @@
     {% csrf_token %}
     <p class="card-title mb-2">{% icon "upload" 16 %} Upload a file</p>
     {% include "_field.html" with field=form.file %}
-    <p class="help mb-2">UTF-8 CSV, up to 1 MB / 5,000 rows. Comma, semicolon or tab separated.</p>
     <div class="btn-row"><button class="btn btn-primary" type="submit">Continue {% icon "arrow-right" 16 %}</button><a class="btn btn-ghost" href="{% url 'import_template' %}">{% icon "download" 14 %} Template</a></div>
   </form>
   <section class="card card-flush">

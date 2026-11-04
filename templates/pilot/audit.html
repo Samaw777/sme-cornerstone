@@ -2,7 +2,7 @@
 {% block title %}Audit log · Console{% endblock %}
 {% block content %}
 <header class="page-header"><p class="eyebrow">Platform console</p><h1>Audit log</h1>
-  <p>Append-only. Identifiers and reasons only — no financial payloads, document contents or secrets.</p></header>
+  </header>
 <div class="segmented mb-2"><a href="?" class="{% if not outcome %}active{% endif %}">All</a><a href="?outcome=success" class="{% if outcome == 'success' %}active{% endif %}">Allowed</a><a href="?outcome=denied" class="{% if outcome == 'denied' %}active{% endif %}">Denied</a></div>
 <section class="card card-flush">{% include "pilot/_audit_table.html" %}</section>
 {% endblock %}

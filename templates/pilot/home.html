@@ -3,7 +3,7 @@
 {% block title %}Console · SME Cornerstone{% endblock %}
 {% block content %}
 <header class="page-header"><p class="eyebrow">Platform console</p><h1>Overview</h1>
-  <p>Manage organisations and the pilot. Merchant financial records aren't visible here unless you open audited, time-limited support access to one business.</p></header>
+  </header>
 <section class="stats">
   <a class="card" href="{% url 'console_businesses' %}"><p class="stat-label">{% icon "building" 14 %} Businesses</p><p class="stat-value">{{ counts.businesses }}</p></a>
   <a class="card" href="{% url 'console_institutions' %}"><p class="stat-label">{% icon "landmark" 14 %} Institutions</p><p class="stat-value">{{ counts.institutions }}</p></a>

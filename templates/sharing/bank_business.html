@@ -7,7 +7,7 @@
   <a class="back" href="{% url 'bank_home' %}">{% icon "arrow-left" 14 %} Authorised businesses</a>
   <div class="row-between">
     <div><h1>{% if data.profile %}{{ data.profile.name }}{% else %}Business {{ consent.reference }}{% endif %}</h1>
-      <p>Shown under consent <code>{{ consent.reference }}</code> for: {{ consent.get_purpose_display }}. Access expires {{ consent.expires_at|date:"j M Y" }}.</p></div>
+      <p>Consent <code>{{ consent.reference }}</code> · expires {{ consent.expires_at|date:"j M Y" }}</p></div>
     {% if can_pdf %}<a class="btn btn-primary" href="{% url 'bank_pdf' business.public_id %}">{% icon "download" 16 %} Download PDF</a>{% else %}<span class="chip">PDF download not authorised</span>{% endif %}
   </div>
 </header>

@@ -14,7 +14,7 @@
 </header>
 
 <div id="offline-banner" class="notice notice-warn mb-2" hidden>{% icon "alert" 16 %}<span id="offline-text">You're offline. Entries are saved on this phone and upload when you're back online.</span></div>
-{% if needs_approval %}<div class="notice notice-info mb-2">{% icon "info" 16 %}<span>Your entries are held for an owner or approver to check before they count.</span></div>{% endif %}
+{% if needs_approval %}<div class="notice notice-info mb-2">{% icon "info" 16 %}<span>Your entries need approval.</span></div>{% endif %}
 
 <form method="post" enctype="multipart/form-data" class="form qa" id="qa-form" data-no-loading>
   {% csrf_token %}
@@ -30,8 +30,7 @@
     <input type="text" name="amount" id="qa-amount" inputmode="decimal" autocomplete="off" placeholder="0" required aria-label="Amount in ETB">
     <button type="button" class="icon-button qa-mic" id="qa-mic" title="Say it" aria-label="Speak the transaction">{% icon "mic" 20 %}</button>
   </div>
-  <p class="help center" id="qa-voice-help">Tap the speech button and say e.g. “expense 3200 diesel cash” — English or Amharic.
-    <select id="qa-lang" class="qa-lang" aria-label="Speech language"><option value="en-US">English</option><option value="am-ET">አማርኛ</option></select></p>
+  <p class="help center" id="qa-voice-help">{% icon "mic" 12 %} <select id="qa-lang" class="qa-lang" aria-label="Speech language"><option value="en-US">English</option><option value="am-ET">አማርኛ</option></select></p>
 
   <div class="qa-chips" aria-label="Favourites">
     {% if last %}<button type="button" class="qa-chip qa-chip-repeat" id="qa-repeat">{% icon "refresh" 14 %} Repeat last</button>{% endif %}
@@ -62,17 +61,17 @@
   {% if can_photo %}
   <label class="qa-photo" id="qa-photo-label">
     <input type="file" name="photo" id="qa-photo" accept="image/*" capture="environment">
-    <span class="qa-photo-empty">{% icon "camera" 18 %} Add receipt photo <small>makes it evidence-supported</small></span>
+    <span class="qa-photo-empty">{% icon "camera" 18 %} Receipt photo</span>
     <img id="qa-photo-preview" alt="Receipt preview" hidden>
   </label>
   {% endif %}
 
   <details class="disclosure mt-1">
-    <summary>More details (optional)</summary>
+    <summary>More details</summary>
     <div class="disclosure-body">
       <div class="field"><label class="label" for="qa-party">Customer or supplier</label><input type="text" name="counterparty" id="qa-party" maxlength="120"></div>
       <div class="field"><label class="label" for="qa-desc">Description</label><input type="text" name="description" id="qa-desc" maxlength="200"></div>
-      <div class="field"><label class="label" for="qa-save-as">Save as a favourite</label><input type="text" name="save_as" id="qa-save-as" maxlength="40" placeholder="e.g. Diesel"></div>
+      <div class="field"><label class="label" for="qa-save-as">Save as favourite</label><input type="text" name="save_as" id="qa-save-as" maxlength="40" placeholder="e.g. Diesel"></div>
     </div>
   </details>
 
