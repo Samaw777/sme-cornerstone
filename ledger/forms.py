@@ -8,7 +8,8 @@ from merchants.forms import DateInput
 
 from .importing import DATE_FORMATS, FIELDS
 from .models import (
-    INFLOW_CATEGORIES, OUTFLOW_CATEGORIES, Annotation, Category, Direction, Document, Invoice, RecurringObligation,
+    INFLOW_CATEGORIES, OUTFLOW_CATEGORIES, Annotation, Category, Direction, Document, Invoice, PaymentMethod,
+    RecurringObligation,
 )
 
 AMOUNT_ATTRS = {"inputmode": "decimal", "placeholder": "0.00", "step": "0.01", "min": "0.01"}
@@ -23,6 +24,7 @@ class TransactionForm(forms.Form):
     counterparty = forms.CharField(label=_("Customer or supplier"), max_length=120, required=False)
     description = forms.CharField(label=_("Description"), max_length=200, required=False)
     reference = forms.CharField(label=_("Receipt or reference number"), max_length=80, required=False)
+    payment_method = forms.ChoiceField(label=_("Paid by"), choices=[("", _("Not specified"))] + PaymentMethod.choices, required=False)
 
     def clean_occurred_on(self):
         value = self.cleaned_data["occurred_on"]
@@ -74,6 +76,7 @@ class MappingForm(forms.Form):
         "date": _("Date *"), "amount": _("Amount (one column; negative = money out)"), "money_in": _("Money in"),
         "money_out": _("Money out"), "direction": _("Direction (in/out, credit/debit)"), "category": _("Category"),
         "description": _("Description"), "counterparty": _("Customer or supplier"), "reference": _("Reference / receipt no."),
+        "payment_method": _("Paid by (cash / telebirr / bank)"),
     }
 
     def __init__(self, *args, headers=(), **kwargs):

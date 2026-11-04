@@ -38,7 +38,8 @@ from .models import (
 )
 
 MAX_ROWS = 5000
-FIELDS = ["date", "amount", "money_in", "money_out", "direction", "category", "description", "counterparty", "reference"]
+FIELDS = ["date", "amount", "money_in", "money_out", "direction", "category", "description", "counterparty", "reference",
+          "payment_method"]
 DATE_FORMATS = {
     "iso": ("%Y-%m-%d", "YYYY-MM-DD"),
     "dmy": ("%d/%m/%Y", "DD/MM/YYYY"),
@@ -57,7 +58,10 @@ HEADER_GUESSES = {
     "description": ["description", "details", "narration", "memo", "note", "particulars"],
     "counterparty": ["counterparty", "customer", "supplier", "payee", "party", "name"],
     "reference": ["reference", "ref", "receipt no", "invoice no", "transaction id", "id"],
+    "payment_method": ["payment method", "method", "payment", "paid by", "channel"],
 }
+PAYMENT_ALIASES = {"cash": "cash", "telebirr": "telebirr", "tele birr": "telebirr", "bank": "bank", "bank transfer": "bank",
+                   "transfer": "bank", "cbe": "bank", "mobile money": "telebirr"}
 
 
 def read_upload(upload):
@@ -260,6 +264,9 @@ def preview(batch):
         elif row["amount"] is not None and row["amount"] >= Decimal("1e13"):
             errors.append("Amount is too large.")
 
+        row["payment_method"] = PAYMENT_ALIASES.get(_norm(cell("payment_method", raw)), "")
+        if cell("payment_method", raw) and not row["payment_method"]:
+            warnings.append(f"Payment method “{cell('payment_method', raw)}” not recognised — left blank.")
         row["category"] = None
         if row["direction"]:
             row["category"], note = match_category(cell("category", raw), row["direction"])
@@ -305,6 +312,9 @@ def commit(batch, user, include_repeats=False, is_demo=False):
         raise ValidationError("This import has already been completed or discarded.")
     results = preview(batch)
     imported = duplicates = 0
+    from .services import requires_approval
+
+    status = Transaction.Status.PENDING if requires_approval(batch.business, user) else Transaction.Status.ACTIVE
     for row in results:
         if row["status"] == "error":
             continue
@@ -321,7 +331,7 @@ def commit(batch, user, include_repeats=False, is_demo=False):
                     business=batch.business, source_kind=SourceKind.CSV, source_event=event, import_batch=batch,
                     direction=row["direction"], category=row["category"], amount=row["amount"],
                     occurred_on=row["date"], description=row["description"], counterparty=row["counterparty"],
-                    reference=row["reference"], fingerprint=row["fingerprint"], created_by=user, is_demo=is_demo,
+                    reference=row["reference"], payment_method=row["payment_method"], fingerprint=row["fingerprint"], created_by=user, is_demo=is_demo, status=status,
                 )
             imported += 1
         except IntegrityError:

@@ -14,7 +14,15 @@
   </div>
 </header>
 
-{% if txn.status != "active" %}
+{% if txn.status == "pending" %}
+<div class="notice notice-info mb-2">{% icon "info" 16 %}<div style="flex:1"><strong>Awaiting approval.</strong> Entered by {{ txn.created_by.display_name }}; it isn't counted in totals, the passport or credit metrics until an owner or approver approves it.
+  {% if can_approve %}<form method="post" action="{% url 'approvals' %}" class="form row mt-1">{% csrf_token %}<input type="hidden" name="txn" value="{{ txn.public_id }}">
+    <input class="input" type="text" name="reason" placeholder="Reason (to reject)" maxlength="300" style="flex:1;min-width:10rem">
+    <button class="btn btn-primary btn-sm" name="decision" value="approve" type="submit">Approve</button>
+    <button class="btn btn-danger btn-sm" name="decision" value="reject" type="submit">Reject</button></form>{% endif %}</div></div>
+{% elif txn.status == "rejected" %}
+<div class="notice notice-danger mb-2">{% icon "ban" 16 %}<span>Rejected{% for d in decisions %} by {{ d.decided_by.display_name }} on {{ d.decided_at|date:"j M Y" }} — “{{ d.reason }}”{% endfor %}. Kept for the audit trail; never counted.</span></div>
+{% elif txn.status != "active" %}
 <div class="notice notice-warn mb-2">{% icon "history" 16 %}<span>This is a corrected original. It's kept for the audit trail and <strong>not counted</strong> in any total.{% for c in corrections %}{% if c.replacement %} <a class="link" href="{% url 'transaction_detail' c.replacement.public_id %}">See the current version</a>.{% endif %}{% endfor %}</span></div>
 {% endif %}
 
@@ -25,9 +33,11 @@
       <dt>Customer / supplier</dt><dd>{{ txn.counterparty|default:"—" }}</dd>
       <dt>Description</dt><dd>{{ txn.description|default:"—" }}</dd>
       <dt>Reference</dt><dd>{{ txn.reference|default:"—" }}</dd>
+      <dt>Paid by</dt><dd>{{ txn.get_payment_method_display|default:"Not specified" }}</dd>
       <dt>Currency</dt><dd>{{ txn.currency }}</dd>
       <dt>Source</dt><dd>{{ txn.get_source_kind_display }}{% if txn.connected_source %} — {{ txn.connected_source }}{% endif %}{% if txn.import_batch %} — <a class="link" href="{% url 'import_preview' txn.import_batch.pk %}">{{ txn.import_batch.filename }}</a>{% endif %}</dd>
       <dt>Recorded</dt><dd>{{ txn.created_at|date:"j M Y H:i" }}{% if txn.created_by %} by {{ txn.created_by.display_name }}{% endif %}</dd>
+      {% for d in decisions %}<dt>{{ d.get_decision_display }}</dt><dd>{{ d.decided_at|date:"j M Y H:i" }} by {{ d.decided_by.display_name }}{% if d.reason %} — “{{ d.reason }}”{% endif %}</dd>{% endfor %}
     </dl>
     {% if txn.source_event %}
     <details class="disclosure mt-2">
@@ -88,6 +98,7 @@
         {% include "_field.html" with field=amend_form.counterparty %}
         {% include "_field.html" with field=amend_form.description %}
         {% include "_field.html" with field=amend_form.reference %}
+        {% include "_field.html" with field=amend_form.payment_method %}
         {% include "_field.html" with field=amend_form.reason %}
         <button class="btn btn-primary btn-sm" type="submit">Save correction</button>
       </form>

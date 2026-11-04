@@ -39,7 +39,7 @@ ZERO = Decimal("0")
 ALL_CATEGORIES = [c.value for c in DataCategory]
 
 METHODS = [
-    ("Records counted", "Active transactions in ETB dated within the reporting period. Superseded and reversed records are kept for audit but excluded from every total."),
+    ("Records counted", "Active transactions in ETB dated within the reporting period. Superseded, reversed, rejected and not-yet-approved entries are kept for audit but excluded from every total."),
     ("Revenue", "Sum of money-in records categorised as sales, service income or other operating income."),
     ("Operating expenses", "Sum of money-out records in operating categories (stock, rent, wages, utilities, transport, telecom, taxes and fees, maintenance, other)."),
     ("Revenue less operating expenses", "Revenue minus operating expenses on a cash basis. It is not accounting profit: there are no accruals, depreciation, inventory adjustments or tax provisions."),
@@ -361,6 +361,10 @@ def limitations(data, missing, txns, business):
         notes.append(f"{pct(self_reported, gross)}% of recorded value is self-reported and has not been independently verified.")
     if not ConnectedSource.objects.filter(business=business).exists():
         notes.append("No connected account: no figures are system-verified and statement reconciliation isn't possible.")
+    pending = Transaction.objects.filter(business=business, status=Transaction.Status.PENDING,
+                                         occurred_on__gte=data["period"]["start"], occurred_on__lte=data["period"]["end"]).count()
+    if pending:
+        notes.append(f"{pending} entr{'y' if pending == 1 else 'ies'} in this period {'is' if pending == 1 else 'are'} awaiting approval and not counted.")
     notes.append("Only activity recorded on this platform is included. Cash, accounts or obligations kept elsewhere are not visible.")
     notes.append("Figures are on a cash basis and are not audited financial statements or accounting profit.")
     return notes

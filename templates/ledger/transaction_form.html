@@ -6,7 +6,7 @@
 <header class="page-header">
   <a class="back" href="{% url 'transactions' %}">{% icon "arrow-left" 14 %} Transactions</a>
   <h1>Record a transaction</h1>
-  <p>Manual entries are <strong>self-reported</strong>. Attach a receipt afterwards to make them evidence-supported.</p>
+  <p>Manual entries are <strong>self-reported</strong>. Attach a receipt afterwards to make them evidence-supported. On your phone, <a class="link" href="{% url 'quick_add' %}">Quick add</a> is faster.</p>
 </header>
 
 <form method="post" class="form card" style="max-width: 40rem">
@@ -28,6 +28,7 @@
     {% for error in form.category.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
     <p class="help">Loans, owner capital, drawings and equipment are cash movement but not revenue or operating expense.</p>
   </div>
+  {% include "_field.html" with field=form.payment_method %}
   {% include "_field.html" with field=form.counterparty %}
   {% include "_field.html" with field=form.description %}
   {% include "_field.html" with field=form.reference %}

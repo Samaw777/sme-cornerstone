@@ -21,7 +21,7 @@ from .forms import (
 )
 from .models import (
     Annotation, Category, ConnectedSource, Correction, DataQualityFinding, Direction, Document, EvidenceLink, ImportBatch, Invoice,
-    InvoicePayment, RecurringObligation, SourceKind, Transaction, categories_for,
+    InvoicePayment, PaymentMethod, RecurringObligation, SourceKind, Transaction, categories_for,
 )
 
 # ---------- Transactions ----------
@@ -31,7 +31,7 @@ from .models import (
 def transaction_list(request):
     business = request.business
     qs = Transaction.objects.filter(business=business).select_related("connected_source")
-    filters = {k: request.GET.get(k, "") for k in ("from", "to", "source", "evidence", "direction", "category", "status", "q")}
+    filters = {k: request.GET.get(k, "") for k in ("from", "to", "source", "evidence", "direction", "category", "status", "q", "payment")}
     errors = []
     try:
         if filters["from"]:
@@ -48,12 +48,15 @@ def transaction_list(request):
         qs = qs.filter(direction=filters["direction"])
     if filters["category"] in Category.values:
         qs = qs.filter(category=filters["category"])
+    if filters["payment"] in PaymentMethod.values:
+        qs = qs.filter(payment_method=filters["payment"])
     if filters["status"] == "all":
         pass
     elif filters["status"] in Transaction.Status.values:
         qs = qs.filter(status=filters["status"])
     else:
-        qs = qs.filter(status=Transaction.Status.ACTIVE)
+        # Current records, plus entries still waiting for approval (marked, not counted).
+        qs = qs.filter(status__in=[Transaction.Status.ACTIVE, Transaction.Status.PENDING])
     if filters["q"]:
         qs = qs.filter(description__icontains=filters["q"]) | qs.filter(counterparty__icontains=filters["q"])
     active = qs.filter(status=Transaction.Status.ACTIVE)
@@ -68,7 +71,7 @@ def transaction_list(request):
     return render(request, "ledger/transactions.html", {
         "page": page, "filters": filters, "errors": errors, "totals": totals, "query": query.urlencode(),
         "sources": SourceKind.choices, "evidence_classes": TRANSACTION_EVIDENCE_CLASSES,
-        "categories": Category.choices, "statuses": Transaction.Status.choices,
+        "categories": Category.choices, "statuses": Transaction.Status.choices, "methods": PaymentMethod.choices,
     })
 
 
@@ -95,8 +98,10 @@ def _txn(request, public_id):
 @merchant_view(Permission.REPORTS)
 def transaction_detail(request, public_id):
     txn = _txn(request, public_id)
-    can_correct = request.membership.has(Permission.RECORD) and txn.status == Transaction.Status.ACTIVE and not txn.is_system_sourced
-    initial = {f: getattr(txn, f) for f in ("direction", "occurred_on", "amount", "category", "counterparty", "description", "reference")}
+    can_approve = request.membership.has(Permission.APPROVE)
+    can_correct = can_approve and request.membership.has(Permission.RECORD) and txn.status == Transaction.Status.ACTIVE and not txn.is_system_sourced
+    initial = {f: getattr(txn, f) for f in ("direction", "occurred_on", "amount", "category", "counterparty", "description",
+                                            "reference", "payment_method")}
     documents = Document.objects.filter(business=request.business).exclude(links__transaction=txn)[:50]
     return render(request, "ledger/transaction_detail.html", {
         "txn": txn,
@@ -109,7 +114,9 @@ def transaction_detail(request, public_id):
         "reverse_form": CorrectionReasonForm(),
         "note_form": AnnotationForm(),
         "can_correct": can_correct,
-        "can_link": request.membership.has(Permission.DOCUMENTS) and txn.status == Transaction.Status.ACTIVE,
+        "can_approve": can_approve,
+        "decisions": txn.approval_decisions.select_related("decided_by"),
+        "can_link": request.membership.has(Permission.DOCUMENTS) and txn.status in (Transaction.Status.ACTIVE, Transaction.Status.PENDING),
         "documents": documents,
         "doc_form": DocumentForm(),
     })
@@ -299,9 +306,9 @@ def import_discard(request, pk):
 
 @merchant_view(Permission.IMPORT)
 def import_template(request):
-    content = ("date,type,amount,category,customer_or_supplier,description,reference\n"
-               f"{today():%Y-%m-%d},in,12500.00,Sales,Walk-in customers,Daily shop sales,R-0001\n"
-               f"{today():%Y-%m-%d},out,4300.00,Stock and raw materials,Merkato wholesaler,Green coffee 20kg,S-0457\n")
+    content = ("date,type,amount,category,customer_or_supplier,description,reference,payment_method\n"
+               f"{today():%Y-%m-%d},in,12500.00,Sales,Walk-in customers,Daily shop sales,R-0001,cash\n"
+               f"{today():%Y-%m-%d},out,4300.00,Stock and raw materials,Merkato wholesaler,Green coffee 20kg,S-0457,telebirr\n")
     response = HttpResponse(content, content_type="text/csv")
     response["Content-Disposition"] = 'attachment; filename="cornerstone-import-template.csv"'
     return response

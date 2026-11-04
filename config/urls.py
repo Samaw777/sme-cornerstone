@@ -9,6 +9,7 @@ urlpatterns = [
     path("", include("sharing.urls")),
     path("api/v1/", include("partner_api.urls")),
     path("console/", include("pilot.urls")),
+    path("", include("capture.urls")),
 ]
 
 handler403 = "core.views.permission_denied"

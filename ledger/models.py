@@ -68,6 +68,16 @@ class SourceKind(models.TextChoices):
     CSV = "csv", _("CSV import")
     CONNECTOR = "connector", _("Connected source")
     CORRECTION = "correction", _("Correction")
+    SMS = "sms", _("Pasted SMS")
+    TELEGRAM = "telegram", _("Telegram bot")
+    BILL = "bill", _("Bill marked paid")
+
+
+class PaymentMethod(models.TextChoices):
+    CASH = "cash", _("Cash")
+    TELEBIRR = "telebirr", _("telebirr")
+    BANK = "bank", _("Bank transfer")
+    OTHER = "other", _("Other")
 
 
 def sha256_json(data):
@@ -185,6 +195,9 @@ class Transaction(models.Model):
         ACTIVE = "active", _("Active")
         SUPERSEDED = "superseded", _("Superseded by a correction")
         REVERSED = "reversed", _("Reversed")
+        # Entered by someone without approval rights: not counted until approved.
+        PENDING = "pending", _("Awaiting approval")
+        REJECTED = "rejected", _("Rejected by an approver")
 
     public_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     business = models.ForeignKey("merchants.Business", on_delete=models.CASCADE, related_name="transactions")
@@ -196,6 +209,7 @@ class Transaction(models.Model):
     description = models.CharField(max_length=200, blank=True)
     counterparty = models.CharField(max_length=120, blank=True)
     reference = models.CharField(max_length=80, blank=True)
+    payment_method = models.CharField(max_length=10, choices=PaymentMethod.choices, blank=True)
 
     source_kind = models.CharField(max_length=12, choices=SourceKind.choices)
     source_event = models.ForeignKey(SourceEvent, null=True, blank=True, on_delete=models.PROTECT, related_name="transactions")
@@ -504,3 +518,35 @@ class DataQualityFinding(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class ApprovalDecision(ImmutableModel):
+    """An approver's decision on an entry made by someone without approval rights."""
+
+    class Decision(models.TextChoices):
+        APPROVED = "approved", _("Approved")
+        REJECTED = "rejected", _("Rejected")
+
+    business = models.ForeignKey("merchants.Business", on_delete=models.CASCADE, related_name="approval_decisions")
+    transaction = models.ForeignKey(Transaction, on_delete=models.CASCADE, related_name="approval_decisions")
+    decision = models.CharField(max_length=10, choices=Decision.choices)
+    reason = models.CharField(max_length=300, blank=True)
+    decided_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+")
+    decided_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-decided_at"]
+
+
+class ObligationPayment(models.Model):
+    """Links one due instalment of a recurring obligation to the transaction that
+    paid it, so a bill can't be marked paid twice."""
+
+    obligation = models.ForeignKey(RecurringObligation, on_delete=models.CASCADE, related_name="payments")
+    due_date = models.DateField()
+    transaction = models.ForeignKey(Transaction, on_delete=models.CASCADE, related_name="obligation_payments")
+    recorded_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL, related_name="+")
+    recorded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["obligation", "due_date"], name="one_payment_per_instalment")]

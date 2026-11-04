@@ -26,4 +26,9 @@ def workspace(request):
         analyst=analyst_membership(user),
         is_platform_admin=user.is_platform_admin,
     )
+    membership = context["membership"]
+    if membership and membership.can_approve:
+        from ledger.models import Transaction
+
+        context["pending_count"] = Transaction.objects.filter(business=membership.business, status=Transaction.Status.PENDING).count()
     return context

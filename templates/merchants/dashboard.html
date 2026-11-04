@@ -10,7 +10,7 @@
       <h1>Dashboard</h1>
     </div>
     <div class="row no-print">
-      <a class="btn btn-primary" href="{% url 'transaction_new' %}">{% icon "plus" 16 %} Record</a>
+      <a class="btn btn-primary" href="{% url 'quick_add' %}">{% icon "plus" 16 %} Log</a>
       <a class="btn btn-secondary" href="{% url 'passport' %}">{% icon "passport" 16 %} Passport</a>
     </div>
   </div>
@@ -18,13 +18,19 @@
 
 {% include "_period.html" %}
 
+{% if pending_count %}
+<div class="notice notice-info mt-2 alert-band">{% icon "circle-check" 16 %}<span style="flex:1">{{ pending_count }} entr{{ pending_count|pluralize:"y,ies" }} from staff {{ pending_count|pluralize:"is,are" }} waiting for your approval. They don't count until approved.</span><a class="btn btn-secondary btn-sm" href="{% url 'approvals' %}">Review</a></div>
+{% elif my_pending %}
+<div class="notice notice-info mt-2">{% icon "info" 16 %}<span>{{ my_pending }} of your entr{{ my_pending|pluralize:"y is,ies are" }} waiting for an approver.</span></div>
+{% endif %}
+
 {% if not has_records %}
 <div class="card empty mt-2">
   <span class="empty-icon">{% icon "sparkles" 22 %}</span>
   <strong>Let's build your financial history</strong>
   <p>Record a sale or expense, import a CSV export from your phone or spreadsheet, or connect a source. Every record makes your passport more complete.</p>
   <div class="row">
-    <a class="btn btn-primary" href="{% url 'transaction_new' %}">{% icon "plus" 16 %} Record a transaction</a>
+    <a class="btn btn-primary" href="{% url 'quick_add' %}">{% icon "plus" 16 %} Log a transaction</a>
     <a class="btn btn-secondary" href="{% url 'import_list' %}">{% icon "upload" 16 %} Import CSV</a>
     <a class="btn btn-ghost" href="{% url 'sources' %}">{% icon "plug" 16 %} Connect a source</a>
   </div>
@@ -45,6 +51,24 @@
   </div>
   {% include "passport/_credit.html" with cm=data.credit_metrics %}
 </section>
+
+{% if bills %}
+<section class="card mt-2">
+  <div class="card-head"><div><p class="card-title">{% icon "calendar" 16 %} Bills due</p><p class="card-sub">From the obligations you recorded. One tap records the payment.</p></div>
+    <a class="chip" href="{% url 'receivables' %}">All obligations</a></div>
+  {% for b in bills %}
+  <div class="bill">
+    <span><strong>{{ b.obligation.name }}</strong> · {{ b.obligation.amount|etb }}<br>
+      <small class="{% if b.overdue %}neg{% else %}faint{% endif %}">{% if b.overdue %}Was due {{ b.due_date|date:"j M" }}{% elif b.days == 0 %}Due today{% else %}Due {{ b.due_date|date:"j M" }}{% endif %} · {{ b.obligation.counterparty }}</small></span>
+    <form method="post" action="{% url 'bill_paid' b.obligation.pk %}">{% csrf_token %}
+      <input type="hidden" name="due_date" value="{{ b.due_date|date:'Y-m-d' }}"><input type="hidden" name="next" value="{% url 'dashboard' %}">
+      <select name="payment_method" class="input" aria-label="Paid by">{% for v, t in methods %}<option value="{{ v }}">{{ t }}</option>{% endfor %}</select>
+      <button class="btn btn-secondary btn-sm" type="submit">{% icon "check" 14 %} Mark paid</button>
+    </form>
+  </div>
+  {% endfor %}
+</section>
+{% endif %}
 
 <section class="stats mt-2">
   <div class="card"><p class="stat-label">{% icon "trending-up" 14 %} Revenue</p><p class="stat-value">{{ data.totals.revenue|etb }}</p><p class="stat-note">{{ data.period.months_with_records }} of {{ data.period.months }} months recorded</p></div>

@@ -32,27 +32,65 @@ def _record_fields(data):
         "description": data.get("description", ""),
         "counterparty": data.get("counterparty", ""),
         "reference": data.get("reference", ""),
+        "payment_method": data.get("payment_method", ""),
     }
 
 
+def requires_approval(business, user):
+    """Entries by anyone who isn't an owner or approver wait for approval."""
+    from merchants.models import BusinessMembership, Permission
+
+    membership = BusinessMembership.objects.filter(business=business, user=user, is_active=True).first()
+    return not (membership and membership.has(Permission.APPROVE))
+
+
 @db_transaction.atomic
-def record_manual(business, user, data):
-    """A merchant-entered record. Its first version is preserved as a source event."""
+def record_manual(business, user, data, *, source_kind=SourceKind.MANUAL, raw=None, fingerprint=None):
+    """A merchant-entered record (typed, quick add, pasted SMS, Telegram, bill paid).
+    Its first version is preserved as a source event, together with any raw text
+    it came from. Entries by non-approvers are held as pending."""
     fields = _record_fields(data)
-    event = SourceEvent.objects.create(
-        business=business, source_kind=SourceKind.MANUAL, payload=fields, received_by=user
-    )
+    payload = {**fields, **({"raw": raw} if raw else {})}
+    if fingerprint and Transaction.objects.filter(business=business, fingerprint=fingerprint).exists():
+        raise ValidationError("This transaction is already recorded (same reference).")
+    event = SourceEvent.objects.create(business=business, source_kind=source_kind, payload=payload, received_by=user)
+    pending = requires_approval(business, user)
     txn = Transaction.objects.create(
-        business=business, source_kind=SourceKind.MANUAL, source_event=event, created_by=user,
-        is_demo=data.get("is_demo", False), **{k: data[k] for k in data if k in _MODEL_FIELDS},
+        business=business, source_kind=source_kind, source_event=event, created_by=user, fingerprint=fingerprint,
+        is_demo=data.get("is_demo", False), status=Transaction.Status.PENDING if pending else Transaction.Status.ACTIVE,
+        **{k: data[k] for k in data if k in _MODEL_FIELDS},
     )
     return txn
 
 
-_MODEL_FIELDS = {"direction", "category", "amount", "currency", "occurred_on", "description", "counterparty", "reference"}
+@db_transaction.atomic
+def decide(txn, user, approve, reason=""):
+    """Approve (it starts counting) or reject (kept for audit, never counted)."""
+    from .models import ApprovalDecision
+
+    txn = Transaction.objects.select_for_update().get(pk=txn.pk)
+    if txn.status != Transaction.Status.PENDING:
+        raise ValidationError("This entry has already been decided.")
+    if requires_approval(txn.business, user):
+        raise ValidationError("Only owners and approvers can decide on entries.")
+    if not approve and not reason.strip():
+        raise ValidationError("Give a reason for rejecting.")
+    txn.status = Transaction.Status.ACTIVE if approve else Transaction.Status.REJECTED
+    txn.save(update_fields=["status"])
+    ApprovalDecision.objects.create(business=txn.business, transaction=txn, decided_by=user, reason=reason.strip(),
+                                    decision=ApprovalDecision.Decision.APPROVED if approve else ApprovalDecision.Decision.REJECTED)
+    audit.record("record.approved" if approve else "record.rejected", user=user, business=txn.business,
+                 transaction=str(txn.public_id))
+    return txn
+
+
+_MODEL_FIELDS = {"direction", "category", "amount", "currency", "occurred_on", "description", "counterparty", "reference",
+                 "payment_method"}
 
 
 def _require_correctable(original, user):
+    if requires_approval(original.business, user):
+        raise ValidationError("Only owners and approvers can correct records. Add a note and ask an approver.")
     if original.status != Transaction.Status.ACTIVE:
         raise ValidationError("Only the current version of a record can be corrected.")
     if original.is_system_sourced:
@@ -76,7 +114,7 @@ def amend(original, user, data, reason):
         import_batch=original.import_batch,
         is_demo=original.is_demo,
         created_by=user,
-        **{k: data[k] for k in data if k in _MODEL_FIELDS},
+        **{"payment_method": original.payment_method, **{k: data[k] for k in data if k in _MODEL_FIELDS}},
     )
     # Documents linked to the original remain evidence for the corrected record.
     for link in original.evidence_links.all():
@@ -155,7 +193,7 @@ def link_document(document, user, *, transaction=None, invoice=None):
     target = transaction or invoice
     if document.business_id != target.business_id:
         raise ValidationError("Documents can only be linked within the same business.")
-    if transaction is not None and transaction.status != Transaction.Status.ACTIVE:
+    if transaction is not None and transaction.status not in (Transaction.Status.ACTIVE, Transaction.Status.PENDING):
         raise ValidationError("Link evidence to the current version of the record.")
     link, _ = EvidenceLink.objects.get_or_create(document=document, transaction=transaction, invoice=invoice, defaults={"linked_by": user})
     if transaction is not None:

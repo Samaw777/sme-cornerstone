@@ -15,7 +15,7 @@ from .models import (
     DataQualityFinding, Transaction,
 )
 
-CALCULATION_VERSION = "2026.2"
+CALCULATION_VERSION = "2026.3"
 LARGE_AMOUNT = Decimal("10000")
 UNUSUAL_CHANGE_RATIO = Decimal("0.5")
 UNUSUAL_MIN_BASE = Decimal("1000")

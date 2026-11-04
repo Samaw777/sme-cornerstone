@@ -28,6 +28,7 @@
   </fieldset>
   <div class="field-row">{% include "_field.html" with field=form.category %}{% include "_field.html" with field=form.reference %}</div>
   <div class="field-row">{% include "_field.html" with field=form.description %}{% include "_field.html" with field=form.counterparty %}</div>
+  {% include "_field.html" with field=form.payment_method %}
   <p class="help mb-2">A reference column (receipt or transaction number) gives the most reliable duplicate detection.</p>
   <div class="btn-row"><button class="btn btn-primary" type="submit">Review rows {% icon "arrow-right" 16 %}</button></div>
 </form>

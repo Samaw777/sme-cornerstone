@@ -36,6 +36,7 @@ METHODS = [
     ("Debt service coverage", "Average monthly (revenue − operating expenses) ÷ average monthly loan repayments recorded as transactions; if none are recorded, ÷ the monthly equivalent of recorded loan obligations. Debts not recorded on the platform are not included."),
     ("Receivable days", "Outstanding recorded invoices ÷ average monthly revenue × 30, with the overdue share. Only invoices recorded on the platform."),
     ("Cash buffer", "Latest statement closing balance of connected accounts ÷ average monthly operating expenses. Only available with a connected source; cash held elsewhere is unknown."),
+    ("Digital payment share", "Value paid by telebirr or bank transfer ÷ value of records that state a payment method. Records without a method are excluded and their share is shown."),
     ("Evidence strength (0–100)", "Value-weighted evidence of counted records: system-verified 1.0, evidence-supported with a platform-reviewed document 0.8, evidence-supported with file checks only 0.6, self-reported 0.2. Demo sources are included but reported separately."),
     ("Data completeness (0–100)", "Average of the available parts: share of months since the first record that have records; share of non-verified records of ETB 10,000+ with a document; share of connected-account months that reconcile; share of open indicators the business has explained."),
 ]
@@ -148,6 +149,25 @@ def compute(business, txns, monthly, report_day, start, end):
                                        "as_of_month": max(b.month for b in latest).strftime("%Y-%m")},
                                basis="Connected accounts only" + (" — DEMO SOURCE, not real verification." if demo else ".")))
 
+    # Digital payment share: telebirr and bank transfers leave a trail outside the platform.
+    known = [t for t in txns if t.payment_method]
+    known_total = sum((t.amount for t in known), ZERO)
+    gross = sum((t.amount for t in txns), ZERO)
+    if not known_total:
+        metrics.append(_metric("digital_share", "Digital payment share", unit="%",
+                               reason="No records in the period say how they were paid."))
+    else:
+        by_method = defaultdict(Decimal)
+        for t in known:
+            by_method[t.payment_method] += t.amount
+        digital = by_method["telebirr"] + by_method["bank"]
+        metrics.append(_metric("digital_share", "Digital payment share", value=_q(digital / known_total * 100, "0.1"), unit="%",
+                               inputs={"cash": _q(by_method["cash"] / known_total * 100, "0.1") + "%",
+                                       "telebirr": _q(by_method["telebirr"] / known_total * 100, "0.1") + "%",
+                                       "bank": _q(by_method["bank"] / known_total * 100, "0.1") + "%",
+                                       "records_with_method": _q(known_total / gross * 100, "0.1") + "%"},
+                               basis="Share of recorded value paid by telebirr or bank transfer, of records that state a method."))
+
     scores = [evidence_strength(txns), data_completeness(business, txns, monthly, start, end)]
     for item in metrics + scores:
         item["summary"] = _summary(item)
@@ -179,6 +199,8 @@ def _summary(m):
         return f"{_etb(i['outstanding'])} outstanding · {i['overdue_share_percent']}% overdue"
     if key == "cash_buffer":
         return f"{_etb(i['closing_balance'])} balance" + (" · demo source" if "DEMO" in m["basis"] else "")
+    if key == "digital_share":
+        return f"telebirr {i['telebirr']} · bank {i['bank']} · cash {i['cash']}"
     if key == "evidence_strength":
         return f"{i['system_verified']} system-verified · {i['self_reported']} self-reported"
     if key == "data_completeness":

@@ -4,6 +4,10 @@
 {% block content %}
 <header class="page-header"><p class="eyebrow">{{ membership.business.name }}</p><h1>More</h1></header>
 <nav class="card side-nav" aria-label="All sections">
+  <a href="{% url 'sharing' %}"><span class="nav-icon">{% icon "shield-check" 17 %}</span>Sharing &amp; access</a>
+  {% if membership.can_approve %}<a href="{% url 'approvals' %}"><span class="nav-icon">{% icon "circle-check" 17 %}</span>Approvals{% if pending_count %}<span class="nav-count">{{ pending_count }}</span>{% endif %}</a>{% endif %}
+  <a href="{% url 'sms' %}"><span class="nav-icon">{% icon "message" 17 %}</span>Paste bank / telebirr SMS</a>
+  <a href="{% url 'telegram_settings' %}"><span class="nav-icon">{% icon "send" 17 %}</span>Log from Telegram</a>
   <a href="{% url 'import_list' %}"><span class="nav-icon">{% icon "upload" 17 %}</span>CSV import</a>
   <a href="{% url 'receivables' %}"><span class="nav-icon">{% icon "receipt" 17 %}</span>Receivables &amp; obligations</a>
   <a href="{% url 'documents' %}"><span class="nav-icon">{% icon "paperclip" 17 %}</span>Documents</a>

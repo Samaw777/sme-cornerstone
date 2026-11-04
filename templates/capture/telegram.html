@@ -1,0 +1,43 @@
+{% extends "app.html" %}
+{% load ui %}
+{% block title %}Telegram · {{ request.business.name }}{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <a class="back" href="{% url 'quick_add' %}">{% icon "arrow-left" 14 %} Quick add</a>
+  <h1>Log from Telegram</h1>
+  <p>Send the business bot a message like <code>expense 3200 diesel cash</code>, a receipt photo with a caption, or a forwarded bank / telebirr SMS — in English or Amharic. Entries follow your permissions here, including approval.</p>
+</header>
+
+{% if not configured %}
+<div class="notice notice-warn">{% icon "alert" 16 %}<span>The Telegram bot isn't set up on this site yet. The owner or administrator needs to create a bot with @BotFather and add its token — see <code>docs/LOGGING.md</code>.</span></div>
+{% else %}
+<div class="grid-2">
+  <section class="card">
+    <p class="card-title mb-2">{% icon "send" 16 %} Your link</p>
+    {% if link %}
+      <p>Linked{% if link.telegram_username %} as <strong>@{{ link.telegram_username }}</strong>{% endif %} since {{ link.linked_at|date:"j M Y" }}.</p>
+      <form method="post" class="mt-2">{% csrf_token %}<button class="btn btn-ghost btn-sm" name="unlink" value="1" type="submit">Unlink</button></form>
+    {% elif code %}
+      <p>Open {% if bot_username %}<a class="link" href="https://t.me/{{ bot_username }}" target="_blank" rel="noopener">@{{ bot_username }}</a>{% else %}the business bot{% endif %} in Telegram and send:</p>
+      <div class="token-box mono mt-1">/link {{ code.code }}</div>
+      <p class="tiny faint mt-1">The code works once, for 15 minutes.</p>
+    {% else %}
+      <p class="muted">Get a one-time code, then send it to the bot to connect your Telegram account to {{ request.business.name }}.</p>
+      <form method="post" class="mt-2">{% csrf_token %}<button class="btn btn-primary" type="submit">Get link code</button></form>
+    {% endif %}
+  </section>
+  <section class="card">
+    <p class="card-title mb-2">{% icon "message" 16 %} Examples</p>
+    <ul class="stack-sm small">
+      <li><code>sale 4500 freight Adama telebirr</code></li>
+      <li><code>expense 3200 diesel cash</code></li>
+      <li><code>ወጪ 2,300 ነዳጅ ትናንት</code> (yesterday)</li>
+      <li>Photo of a receipt, caption <code>expense 2500 tyres</code></li>
+      <li>Forward a bank or telebirr SMS as it is</li>
+      <li><code>/today</code> — today's totals</li>
+    </ul>
+  </section>
+</div>
+{% endif %}
+{% endblock %}

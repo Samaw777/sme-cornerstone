@@ -1,0 +1,52 @@
+{% extends "app.html" %}
+{% load ui %}
+{% block title %}Paste SMS · {{ request.business.name }}{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <a class="back" href="{% url 'quick_add' %}">{% icon "arrow-left" 14 %} Quick add</a>
+  <h1>Paste bank or telebirr SMS</h1>
+  <p>Copy transaction messages from your phone and paste them here — one or many, with a blank line between messages. We read the amount, date, reference and direction; you check before saving. Each reference is saved once, so pasting the same SMS again won't double count.</p>
+</header>
+
+{% if not drafts %}
+<form method="post" class="form card">
+  {% csrf_token %}
+  <div class="field"><label class="label" for="sms-text">Messages</label>
+    <textarea id="sms-text" name="text" rows="9" required placeholder="e.g. Your account has been credited with ETB 25,000.00 from … Ref No FT26307ABC12 …">{{ text }}</textarea></div>
+  <div class="notice notice-info mb-2">{% icon "info" 16 %}<span>Pasted SMS are recorded as <strong>self-reported</strong>: a copied message isn't an authorised bank feed. Messages are kept with the record as its original source.</span></div>
+  <button class="btn btn-primary" type="submit">Read messages {% icon "arrow-right" 16 %}</button>
+</form>
+{% else %}
+<form method="post" class="form">
+  {% csrf_token %}
+  <input type="hidden" name="step" value="save"><input type="hidden" name="count" value="{{ drafts|length }}">
+  {% for d in drafts %}
+  <section class="card {% if d.duplicate %}row-muted{% endif %}">
+    <div class="row-between mb-1">
+      <label class="check" style="border:0;padding:0;background:none"><input type="checkbox" name="keep-{{ forloop.counter0 }}" value="1" {% if not d.duplicate and d.amount %}checked{% endif %}><span><strong>Message {{ forloop.counter }}</strong></span></label>
+      {% if d.duplicate %}<span class="chip chip-warn">Already recorded — skipped</span>{% elif d.errors %}<span class="chip chip-warn">Check this one</span>{% else %}<span class="chip chip-ok">Ready</span>{% endif %}
+    </div>
+    <p class="tiny faint mb-1">{{ d.raw|truncatechars:240 }}</p>
+    <input type="hidden" name="raw-{{ forloop.counter0 }}" value="{{ d.raw }}">
+    {% for e in d.errors %}<p class="field-error mb-1">{{ e }}</p>{% endfor %}
+    <div class="field-row field-row-3">
+      <div class="field"><label class="label">Type</label><select name="direction-{{ forloop.counter0 }}" class="sms-dir"><option value="in" {% if d.direction == "in" %}selected{% endif %}>Money in</option><option value="out" {% if d.direction == "out" %}selected{% endif %}>Money out</option></select></div>
+      <div class="field"><label class="label">Amount (ETB)</label><input type="text" inputmode="decimal" name="amount-{{ forloop.counter0 }}" value="{{ d.amount|default:'' }}"></div>
+      <div class="field"><label class="label">Date</label><input type="date" name="occurred_on-{{ forloop.counter0 }}" value="{{ d.occurred_on|date:'Y-m-d' }}"></div>
+    </div>
+    <div class="field-row field-row-3">
+      <div class="field"><label class="label">Category</label><select name="category-{{ forloop.counter0 }}">
+        <optgroup label="Money in">{% for v, t in in_categories %}<option value="{{ v }}" {% if d.category == v %}selected{% endif %}>{{ t }}</option>{% endfor %}</optgroup>
+        <optgroup label="Money out">{% for v, t in out_categories %}<option value="{{ v }}" {% if d.category == v %}selected{% endif %}>{{ t }}</option>{% endfor %}</optgroup></select></div>
+      <div class="field"><label class="label">Paid by</label><select name="payment_method-{{ forloop.counter0 }}">{% for v, t in methods %}<option value="{{ v }}" {% if d.payment_method == v %}selected{% endif %}>{{ t }}</option>{% endfor %}</select></div>
+      <div class="field"><label class="label">From / to</label><input type="text" name="counterparty-{{ forloop.counter0 }}" value="{{ d.counterparty }}" maxlength="120"></div>
+    </div>
+    <input type="hidden" name="description-{{ forloop.counter0 }}" value="{{ d.description }}">
+    {% if d.reference %}<p class="tiny faint">Reference {{ d.reference }}</p>{% endif %}
+  </section>
+  {% endfor %}
+  <div class="btn-row"><button class="btn btn-primary" type="submit">Save ticked messages</button><a class="btn btn-ghost" href="{% url 'sms' %}">Start over</a></div>
+</form>
+{% endif %}
+{% endblock %}

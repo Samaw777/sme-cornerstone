@@ -69,6 +69,7 @@ INSTALLED_APPS = [
     "sharing",
     "partner_api",
     "pilot",
+    "capture",
 ]
 
 MIDDLEWARE = [
@@ -198,6 +199,12 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 PARTNER_API_RATE_LIMIT = int(os.environ.get("PARTNER_API_RATE_LIMIT", "60"))
 PARTNER_API_AUTH_FAILURE_LIMIT = int(os.environ.get("PARTNER_API_AUTH_FAILURE_LIMIT", "20"))
 CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
+
+# Telegram bot for logging by chat (optional). Create a bot with @BotFather, then run
+# `python manage.py telegram_setup https://your-site` once. See docs/LOGGING.md.
+TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_WEBHOOK_SECRET = os.environ.get("TELEGRAM_WEBHOOK_SECRET", "")
+TELEGRAM_BOT_USERNAME = os.environ.get("TELEGRAM_BOT_USERNAME", "")
 
 # How long a platform administrator's audited support access to one business lasts.
 SUPPORT_ACCESS_MINUTES = int(os.environ.get("SUPPORT_ACCESS_MINUTES", "30"))

@@ -65,10 +65,14 @@ class Command(BaseCommand):
     # ---------- helpers ----------
 
     def record(self, business, user, day, direction, category, amount, description, counterparty="", reference=""):
+        if direction == "in":
+            method = self.rng.choice(["bank", "bank", "telebirr", "cash"])
+        else:
+            method = "cash" if category in ("transport", "maintenance") else self.rng.choice(["bank", "telebirr"])
         return services.record_manual(business, user, {
             "direction": direction, "category": category, "amount": Decimal(amount).quantize(Decimal("0.01")),
             "currency": "ETB", "occurred_on": day, "description": description, "counterparty": counterparty,
-            "reference": reference, "is_demo": True,
+            "reference": reference, "payment_method": method, "is_demo": True,
         })
 
     def day_in(self, month, low=0, high=27):
@@ -169,7 +173,7 @@ class Command(BaseCommand):
                     invoice.save()
 
         for name, kind, party, amount, freq, start in (
-            ("Truck loan", "loan", "Equipment lender", "45000", "quarterly", months[0]),
+            ("Truck loan", "loan", "Equipment lender", "45000", "quarterly", months[1] + dt.timedelta(days=2)),
             ("Yard and office rent", "rent", "Merkato landlord", "15000", "monthly", dt.date(2022, 1, 1)),
             ("Fleet insurance", "other", "Insurance company", "60000", "annual", dt.date(2024, 7, 1)),
         ):

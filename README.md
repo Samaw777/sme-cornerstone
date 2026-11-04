@@ -44,6 +44,8 @@ connection; there is no offline mode.
 ### Merchant workspace
 - **Onboarding**: business profile with optional TIN and trade licence. Each value is labelled *merchant-provided* until an administrator validates it against a document.
 - **Dashboard**: period presets or a custom period. Shows revenue, operating expenses, net cash movement, unpaid invoices, evidence coverage, data-quality alerts and a monthly chart. Months with no records are drawn as "unknown", not zero.
+- **Easy logging** ([docs/LOGGING.md](docs/LOGGING.md)): phone-first quick add with favourites, receipt photos, voice (English/Amharic) and offline saving. Also paste bank/telebirr SMS, a Telegram bot, and bills-due reminders with one-tap "mark paid". Every transaction records Cash, telebirr or Bank transfer.
+- **Approvals**: entries by staff without the Approve permission wait for an owner or approver and don't count until approved; rejections need a reason and are kept for audit.
 - **Transactions**: record, filter (period, source, evidence class, category, status) and attach receipts. Amend or reverse with a reason; the original record is kept. Notes and disputes leave the record unchanged.
 - **CSV import**: upload, then map columns, then preview (date and amount validation, duplicate and repeat detection, error list), then commit. Re-importing never double counts.
 - **Receivables and obligations**: invoices with payments and aging, plus recurring obligations, all explicitly "recorded by the business".
@@ -162,7 +164,7 @@ python manage.py seed_business "Your Business Name" --remove
 python manage.py test
 ```
 
-There are 64 tests in `tests/`. They cover these acceptance criteria:
+There are 79 tests in `tests/`. They cover these acceptance criteria:
 
 | Criterion | Tests |
 | --- | --- |

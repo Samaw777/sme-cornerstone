@@ -9,6 +9,8 @@ README.md for the layout and docs/ for API, security and integration notes.
 - After changing models: `python manage.py makemigrations <app>` and commit the migration.
 - Financial integrity rules live in `ledger/services.py`, `ledger/importing.py` and `passport/metrics.py`; views call
   them rather than writing records directly. Transactions are never edited in place — use amend/reverse.
+- Quick ways of logging (quick add, SMS, Telegram, bills) all save through `capture.services.log_entry`, which calls
+  `ledger.services.record_manual`; entries by non-approvers are stored as `pending` and never counted until approved.
 - Every bank/MFI read goes through `sharing.access.authorize()` and gets an `AccessReceipt`.
 - Keep every table private: `core/apps.py` enables Row Level Security on all tables after each `migrate`.
 - Templates are in `templates/`; all styles are in `static/css/app.css`.

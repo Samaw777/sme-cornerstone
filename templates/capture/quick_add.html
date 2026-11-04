@@ -1,0 +1,252 @@
+{% extends "app.html" %}
+{% load ui %}
+{% block title %}Quick add · {{ request.business.name }}{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <div class="row-between">
+    <div><p class="eyebrow">{{ request.business.name }}</p><h1>Log a transaction</h1></div>
+    <div class="row">
+      <a class="btn btn-ghost btn-sm" href="{% url 'sms' %}">{% icon "message" 14 %} Paste SMS</a>
+      <a class="btn btn-ghost btn-sm" href="{% url 'telegram_settings' %}">{% icon "send" 14 %} Telegram</a>
+    </div>
+  </div>
+</header>
+
+<div id="offline-banner" class="notice notice-warn mb-2" hidden>{% icon "alert" 16 %}<span id="offline-text">You're offline. Entries are saved on this phone and upload when you're back online.</span></div>
+{% if needs_approval %}<div class="notice notice-info mb-2">{% icon "info" 16 %}<span>Your entries are held for an owner or approver to check before they count.</span></div>{% endif %}
+
+<form method="post" enctype="multipart/form-data" class="form qa" id="qa-form" data-no-loading>
+  {% csrf_token %}
+  <input type="hidden" name="template" id="qa-template">
+
+  <div class="qa-direction" role="radiogroup" aria-label="Type">
+    <label class="qa-dir qa-in"><input type="radio" name="direction" value="in" checked><span>{% icon "plus" 18 %} Sale / money in</span></label>
+    <label class="qa-dir qa-out"><input type="radio" name="direction" value="out"><span>{% icon "minus" 18 %} Expense / money out</span></label>
+  </div>
+
+  <div class="qa-amount">
+    <span>ETB</span>
+    <input type="text" name="amount" id="qa-amount" inputmode="decimal" autocomplete="off" placeholder="0" required aria-label="Amount in ETB">
+    <button type="button" class="icon-button qa-mic" id="qa-mic" title="Say it" aria-label="Speak the transaction">{% icon "mic" 20 %}</button>
+  </div>
+  <p class="help center" id="qa-voice-help">Tap the speech button and say e.g. “expense 3200 diesel cash” — English or Amharic.
+    <select id="qa-lang" class="qa-lang" aria-label="Speech language"><option value="en-US">English</option><option value="am-ET">አማርኛ</option></select></p>
+
+  <div class="qa-chips" aria-label="Favourites">
+    {% if last %}<button type="button" class="qa-chip qa-chip-repeat" id="qa-repeat">{% icon "refresh" 14 %} Repeat last</button>{% endif %}
+    {% for t in templates %}<button type="button" class="qa-chip" data-template="{{ t.pk }}">{{ t.label }}</button>{% endfor %}
+  </div>
+
+  <div class="field-row">
+    <div class="field"><label class="label" for="qa-category">Category</label>
+      <select name="category" id="qa-category" data-default-in="{{ default_in }}" data-default-out="{{ default_out }}">
+        <optgroup label="Money in" data-direction="in">{% for v, t in in_categories %}<option value="{{ v }}">{{ t }}</option>{% endfor %}</optgroup>
+        <optgroup label="Money out" data-direction="out">{% for v, t in out_categories %}<option value="{{ v }}">{{ t }}</option>{% endfor %}</optgroup>
+      </select></div>
+    <div class="field"><span class="label">Paid by</span>
+      <div class="segmented qa-methods" role="radiogroup">
+        {% for v, t in methods %}{% if v != "other" %}<label><input type="radio" name="payment_method" value="{{ v }}" {% if v == "cash" %}checked{% endif %}><span>{{ t }}</span></label>{% endif %}{% endfor %}
+      </div></div>
+  </div>
+
+  <div class="field"><span class="label">When</span>
+    <div class="segmented" role="radiogroup">
+      <label><input type="radio" name="when" value="today" checked><span>Today</span></label>
+      <label><input type="radio" name="when" value="yesterday"><span>Yesterday</span></label>
+      <label><input type="radio" name="when" value="date" id="qa-when-date"><span>Pick date</span></label>
+    </div>
+    <input type="date" name="occurred_on" id="qa-date" class="mt-1" max="{% now 'Y-m-d' %}" hidden>
+  </div>
+
+  {% if can_photo %}
+  <label class="qa-photo" id="qa-photo-label">
+    <input type="file" name="photo" id="qa-photo" accept="image/*" capture="environment">
+    <span class="qa-photo-empty">{% icon "camera" 18 %} Add receipt photo <small>makes it evidence-supported</small></span>
+    <img id="qa-photo-preview" alt="Receipt preview" hidden>
+  </label>
+  {% endif %}
+
+  <details class="disclosure mt-1">
+    <summary>More details (optional)</summary>
+    <div class="disclosure-body">
+      <div class="field"><label class="label" for="qa-party">Customer or supplier</label><input type="text" name="counterparty" id="qa-party" maxlength="120"></div>
+      <div class="field"><label class="label" for="qa-desc">Description</label><input type="text" name="description" id="qa-desc" maxlength="200"></div>
+      <div class="field"><label class="label" for="qa-save-as">Save as a favourite</label><input type="text" name="save_as" id="qa-save-as" maxlength="40" placeholder="e.g. Diesel"></div>
+    </div>
+  </details>
+
+  <button type="submit" class="btn btn-primary btn-lg qa-save" id="qa-save">Save</button>
+  <p class="qa-toast" id="qa-status" role="status" aria-live="polite"></p>
+</form>
+
+{% if templates %}
+<details class="disclosure card mt-2" style="padding:0"><summary>Manage favourites</summary>
+  <div class="disclosure-body">{% for t in templates %}<div class="derived-row"><span>{{ t.label }} <small class="faint">{{ t.get_category_display }}{% if t.payment_method %} · {{ t.get_payment_method_display }}{% endif %} · used {{ t.uses }}×</small></span>
+    <form method="post" action="{% url 'template_delete' t.pk %}">{% csrf_token %}<button class="btn btn-ghost btn-sm" type="submit">Remove</button></form></div>{% endfor %}</div></details>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{{ templates_json|json_script:"qa-templates" }}
+{{ last_json|json_script:"qa-last" }}
+<script>
+(function () {
+  var form = document.getElementById("qa-form");
+  var category = document.getElementById("qa-category");
+  var amount = document.getElementById("qa-amount");
+  var statusEl = document.getElementById("qa-status");
+  var templates = JSON.parse(JSON.parse(document.getElementById("qa-templates").textContent));
+  var last = JSON.parse(JSON.parse(document.getElementById("qa-last").textContent) || "null");
+
+  function dir() { return form.querySelector("input[name=direction]:checked").value; }
+  function setRadio(name, value) { var r = form.querySelector("input[name=" + name + "][value='" + value + "']"); if (r) r.checked = true; }
+  function syncCategories(keep) {
+    var d = dir();
+    category.querySelectorAll("optgroup").forEach(function (g) {
+      var on = g.dataset.direction === d; g.hidden = !on;
+      g.querySelectorAll("option").forEach(function (o) { o.disabled = !on; });
+    });
+    var sel = category.selectedOptions[0];
+    if (!keep || !sel || sel.disabled) category.value = category.dataset["default" + (d === "in" ? "In" : "Out")];
+  }
+  form.querySelectorAll("input[name=direction]").forEach(function (r) { r.addEventListener("change", function () { syncCategories(false); }); });
+  syncCategories(false);
+
+  function fill(t, templateId) {
+    if (t.direction) { setRadio("direction", t.direction); syncCategories(true); }
+    if (t.category) category.value = t.category;
+    if (t.payment_method) setRadio("payment_method", t.payment_method);
+    if (t.amount) amount.value = t.amount;
+    document.getElementById("qa-party").value = t.counterparty || "";
+    document.getElementById("qa-desc").value = t.description || "";
+    document.getElementById("qa-template").value = templateId || "";
+    if (t.occurred_on) { setRadio("when", "date"); showDate(true); document.getElementById("qa-date").value = t.occurred_on; }
+    amount.focus();
+  }
+  document.querySelectorAll("[data-template]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var t = templates.find(function (x) { return String(x.id) === b.dataset.template; });
+      if (t) fill(t, t.id);
+    });
+  });
+  var repeat = document.getElementById("qa-repeat");
+  if (repeat && last) repeat.addEventListener("click", function () { fill(last); });
+
+  var dateInput = document.getElementById("qa-date");
+  function showDate(on) { dateInput.hidden = !on; }
+  form.querySelectorAll("input[name=when]").forEach(function (r) { r.addEventListener("change", function () { showDate(r.value === "date" && r.checked); }); });
+
+  // Receipt photo: shrink big phone photos before upload (keeps uploads fast and under size limits).
+  var photo = document.getElementById("qa-photo");
+  var preview = document.getElementById("qa-photo-preview");
+  if (photo) photo.addEventListener("change", function () {
+    var file = photo.files[0]; if (!file) return;
+    var img = new Image();
+    img.onload = function () {
+      var scale = Math.min(1, 1600 / Math.max(img.width, img.height));
+      var canvas = document.createElement("canvas");
+      canvas.width = Math.round(img.width * scale); canvas.height = Math.round(img.height * scale);
+      canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(function (blob) {
+        var dt = new DataTransfer();
+        dt.items.add(new File([blob], "receipt.jpg", { type: "image/jpeg" }));
+        photo.files = dt.files;
+        preview.src = URL.createObjectURL(blob); preview.hidden = false;
+        document.getElementById("qa-photo-label").classList.add("has-photo");
+      }, "image/jpeg", 0.82);
+    };
+    img.src = URL.createObjectURL(file);
+  });
+
+  // Offline queue in IndexedDB: entries saved with no signal upload later.
+  function db() {
+    return new Promise(function (resolve, reject) {
+      var req = indexedDB.open("cornerstone-queue", 1);
+      req.onupgradeneeded = function () { req.result.createObjectStore("entries", { autoIncrement: true }); };
+      req.onsuccess = function () { resolve(req.result); }; req.onerror = reject;
+    });
+  }
+  function queue(entries) {
+    return db().then(function (d) { return new Promise(function (res) {
+      var tx = d.transaction("entries", "readwrite"); tx.objectStore("entries").add(entries); tx.oncomplete = res; }); });
+  }
+  function queued() {
+    return db().then(function (d) { return new Promise(function (res) {
+      var out = []; var req = d.transaction("entries").objectStore("entries").openCursor();
+      req.onsuccess = function () { var c = req.result; if (c) { out.push([c.key, c.value]); c.continue(); } else res(out); }; }); });
+  }
+  function drop(key) {
+    return db().then(function (d) { return new Promise(function (res) {
+      var tx = d.transaction("entries", "readwrite"); tx.objectStore("entries").delete(key); tx.oncomplete = res; }); });
+  }
+  function send(entries) {
+    var data = new FormData(); entries.forEach(function (e) { data.append(e[0], e[1]); });
+    return fetch(form.action || location.href, { method: "POST", body: data, headers: { Accept: "application/json" }, credentials: "same-origin" });
+  }
+  function banner() {
+    queued().then(function (items) {
+      var el = document.getElementById("offline-banner");
+      el.hidden = navigator.onLine && !items.length;
+      document.getElementById("offline-text").textContent = navigator.onLine
+        ? items.length + " entr" + (items.length === 1 ? "y" : "ies") + " saved on this phone are uploading…"
+        : "You're offline. Entries are saved on this phone and upload when you're back online." + (items.length ? " (" + items.length + " waiting)" : "");
+    }).catch(function () {});
+  }
+  function flush() {
+    if (!navigator.onLine) { banner(); return; }
+    queued().then(function (items) {
+      return items.reduce(function (p, item) {
+        return p.then(function () { return send(item[1]).then(function (r) { if (r.ok || r.status === 400) return drop(item[0]); }); });
+      }, Promise.resolve());
+    }).then(banner).catch(banner);
+  }
+  window.addEventListener("online", flush); window.addEventListener("offline", banner); flush();
+
+  form.addEventListener("submit", function (event) {
+    event.preventDefault();
+    var entries = Array.from(new FormData(form).entries()).filter(function (e) { return !(e[1] instanceof File && !e[1].size); });
+    var button = document.getElementById("qa-save");
+    button.setAttribute("data-loading", "true");
+    function reset(msg, ok) {
+      button.removeAttribute("data-loading");
+      statusEl.textContent = msg; statusEl.className = "qa-toast " + (ok ? "pos" : "neg");
+      clearTimeout(statusEl._t); statusEl._t = setTimeout(function () { statusEl.textContent = ""; }, 4000);
+      if (ok) {
+        amount.value = ""; document.getElementById("qa-template").value = ""; document.getElementById("qa-save-as").value = "";
+        document.getElementById("qa-party").value = ""; document.getElementById("qa-desc").value = "";
+        if (photo) { photo.value = ""; preview.hidden = true; document.getElementById("qa-photo-label").classList.remove("has-photo"); }
+        amount.focus();
+      }
+    }
+    if (!navigator.onLine) { queue(entries).then(function () { reset("Saved on this phone — will upload when you're online.", true); banner(); }); return; }
+    send(entries).then(function (r) { return r.json().then(function (body) { return [r.ok, body]; }); })
+      .then(function (res) { reset(res[0] ? res[1].message : res[1].errors.join(" "), res[0]); })
+      .catch(function () { queue(entries).then(function () { reset("No connection — saved on this phone and will upload later.", true); banner(); }); });
+  });
+
+  // Voice: speak the entry; the server parses it the same way as Telegram messages.
+  var mic = document.getElementById("qa-mic");
+  var Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!Recognition) { mic.hidden = true; document.getElementById("qa-voice-help").hidden = true; }
+  else mic.addEventListener("click", function () {
+    var rec = new Recognition(); rec.lang = document.getElementById("qa-lang").value; rec.interimResults = false;
+    mic.classList.add("listening"); statusEl.textContent = "Listening…"; statusEl.className = "qa-toast";
+    rec.onresult = function (e) {
+      var text = e.results[0][0].transcript; statusEl.textContent = "“" + text + "”";
+      var data = new FormData(); data.append("text", text); data.append("csrfmiddlewaretoken", form.csrfmiddlewaretoken.value);
+      fetch("{% url 'quick_parse' %}", { method: "POST", body: data, credentials: "same-origin" }).then(function (r) { return r.json(); })
+        .then(function (d) { if (d.errors.length && !d.amount) { statusEl.textContent += " — " + d.errors[0]; return; }
+          fill({ direction: d.direction, category: d.category, payment_method: d.payment_method, amount: d.amount,
+                 description: d.description, counterparty: d.counterparty,
+                 occurred_on: d.occurred_on !== "{% now 'Y-m-d' %}" ? d.occurred_on : null }); });
+    };
+    rec.onerror = function () { statusEl.textContent = "Couldn't hear that — try again or type it."; };
+    rec.onend = function () { mic.classList.remove("listening"); };
+    rec.start();
+  });
+
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("{% url 'service_worker' %}").catch(function () {});
+})();
+</script>
+{% endblock %}

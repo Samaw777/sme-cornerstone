@@ -95,12 +95,14 @@ class Permission(models.TextChoices):
     DOCUMENTS = "documents", _("Upload and link documents")
     RECEIVABLES = "receivables", _("Manage invoices and obligations")
     REPORTS = "reports", _("View dashboard and passport")
+    APPROVE = "approve", _("Approve entries made by others")
     # Only for owners; listed so checks read uniformly.
     MANAGE = "manage", _("Manage business, staff and connected sources")
     SHARE = "share", _("Authorise sharing with banks/MFIs")
 
 
-STAFF_GRANTABLE = [Permission.RECORD, Permission.IMPORT, Permission.DOCUMENTS, Permission.RECEIVABLES, Permission.REPORTS]
+STAFF_GRANTABLE = [Permission.RECORD, Permission.IMPORT, Permission.DOCUMENTS, Permission.RECEIVABLES, Permission.REPORTS,
+                   Permission.APPROVE]
 
 
 class BusinessMembership(models.Model):
@@ -134,6 +136,10 @@ class BusinessMembership(models.Model):
             return True
         # Sharing consent and business management are never delegated to staff.
         return permission in STAFF_GRANTABLE and permission in self.permissions
+
+    @property
+    def can_approve(self):
+        return self.has(Permission.APPROVE)
 
     def permission_labels(self):
         if self.is_owner:

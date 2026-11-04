@@ -11,7 +11,8 @@ from django.views.decorators.http import require_http_methods, require_POST
 
 from core import audit
 from core.periods import add_months, default_period, label, month_end, month_start, parse_month, today
-from ledger.models import ConnectedSource, Invoice
+from capture.services import bills_due
+from ledger.models import ConnectedSource, Invoice, PaymentMethod, Transaction
 from passport import metrics
 
 from .access import SESSION_KEY, memberships_for, merchant_view
@@ -156,6 +157,9 @@ def dashboard(request):
         "has_sources": ConnectedSource.objects.filter(business=business).exists(),
         "has_records": business.transactions.exists(),
         "prev_month": label(add_months(month_start(today()), -1)),
+        "bills": bills_due(business)[:6] if request.membership.has(Permission.RECORD) else [],
+        "my_pending": Transaction.objects.filter(business=business, created_by=request.user, status=Transaction.Status.PENDING).count(),
+        "methods": PaymentMethod.choices,
     }
     return render(request, "merchants/dashboard.html", context)
 

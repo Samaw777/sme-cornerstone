@@ -1,0 +1,40 @@
+{% extends "app.html" %}
+{% load ui %}
+{% block title %}Approvals · {{ request.business.name }}{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <p class="eyebrow">Records</p><h1>Awaiting approval</h1>
+  <p>Entries made by staff without approval rights. They don't count in totals, the passport or the credit metrics until approved. Rejected entries are kept for the audit trail but never counted.</p>
+</header>
+
+{% if pending %}
+<form method="post" class="form">
+  {% csrf_token %}
+  <section class="card card-flush">
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th><input type="checkbox" id="all" aria-label="Select all"></th><th>Entry</th><th>By</th><th>Evidence</th><th class="num">Amount</th></tr></thead>
+      <tbody>{% for t in pending %}
+        <tr><td><input type="checkbox" name="txn" value="{{ t.public_id }}" class="pick" aria-label="Select"></td>
+          <td class="primary"><a href="{% url 'transaction_detail' t.public_id %}">{{ t.description|default:t.get_category_display }}</a><small>{{ t.get_category_display }} · {{ t.occurred_on|date:"j M Y" }}{% if t.payment_method %} · {{ t.get_payment_method_display }}{% endif %} · via {{ t.get_source_kind_display }}</small></td>
+          <td class="small">{{ t.created_by.display_name }}<small>{{ t.created_at|date:"j M H:i" }}</small></td>
+          <td>{% evidence_badge t.evidence_class t.is_demo %}{% for l in t.evidence_links.all %}<small><a class="link" href="{% url 'document_download' l.document.public_id %}?view=1" target="_blank" rel="noopener">receipt</a></small>{% endfor %}</td>
+          <td class="num {% if t.direction == 'in' %}pos{% endif %}">{% if t.direction == 'out' %}−{% else %}+{% endif %}{{ t.amount|etb }}</td></tr>
+      {% endfor %}</tbody>
+    </table></div>
+  </section>
+  <div class="card mt-2">
+    <div class="field"><label class="label" for="reason">Reason (required to reject)</label><input type="text" id="reason" name="reason" maxlength="300" placeholder="e.g. Duplicate of yesterday's entry"></div>
+    <div class="btn-row"><button class="btn btn-primary" type="submit" name="decision" value="approve">{% icon "check" 16 %} Approve selected</button>
+      <button class="btn btn-danger" type="submit" name="decision" value="reject">Reject selected</button></div>
+  </div>
+</form>
+{% else %}
+<section class="card empty"><span class="empty-icon">{% icon "circle-check" 22 %}</span><strong>Nothing waiting</strong><p>New entries from staff appear here for you to check.</p></section>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}<script>
+  var all = document.getElementById("all");
+  if (all) all.addEventListener("change", function () { document.querySelectorAll(".pick").forEach(function (c) { c.checked = all.checked; }); });
+</script>{% endblock %}

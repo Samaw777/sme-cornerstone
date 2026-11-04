@@ -58,7 +58,7 @@ Every response carries this `meta` block:
   "business_id": "…",
   "period": {"start": "2025-11-01", "end": "2026-10-31", "months": 12, "months_with_records": 12},
   "includes_demo_data": true,
-  "calculation_version": "2026.2",
+  "calculation_version": "2026.3",
   "report_version": 7,
   "consent_reference": "CNS-…",
   "receipt_reference": "RCPT-…",
@@ -85,7 +85,7 @@ type and month. Notes the business wrote to explain an indicator are included, e
 
 `credit-metrics` returns `credit_metrics.scores[]` (Evidence strength and Data completeness, 0–100)
 and `credit_metrics.metrics[]`: operating cash margin, months with operating surplus, revenue
-stability, debt service coverage, receivable days and cash buffer. Each item has `available`,
+stability, debt service coverage, receivable days, cash buffer and digital payment share. Each item has `available`,
 `value`, `unit`, its `inputs` (with `unit: "ETB"` on money amounts), a `basis`, and a `reason` when it
 can't be calculated. These are indicators, **not a credit score or recommendation**; there is no
 composite number.

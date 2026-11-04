@@ -31,6 +31,8 @@
         <a href="{% url 'console_audit' %}" class="{% if path == 'console_audit' %}active{% endif %}"><span class="nav-icon">{% icon "shield-check" 17 %}</span>Audit log</a>
       {% else %}
         <a href="{% url 'dashboard' %}" class="{% if path == 'dashboard' %}active{% endif %}"><span class="nav-icon">{% icon "dashboard" 17 %}</span>{% translate "Dashboard" %}</a>
+        <a href="{% url 'quick_add' %}" class="{% if path == 'quick_add' or path == 'sms' or path == 'telegram_settings' %}active{% endif %}"><span class="nav-icon">{% icon "plus" 17 %}</span>{% translate "Log a transaction" %}</a>
+        {% if membership and membership.can_approve %}<a href="{% url 'approvals' %}" class="{% if path == 'approvals' %}active{% endif %}"><span class="nav-icon">{% icon "circle-check" 17 %}</span>{% translate "Approvals" %}{% if pending_count %}<span class="nav-count">{{ pending_count }}</span>{% endif %}</a>{% endif %}
         <span class="nav-group">{% translate "Records" %}</span>
         <a href="{% url 'transactions' %}" class="{% if path == 'transactions' or path == 'transaction_new' or path == 'transaction_detail' %}active{% endif %}"><span class="nav-icon">{% icon "transactions" 17 %}</span>{% translate "Transactions" %}</a>
         <a href="{% url 'import_list' %}" class="{% if path|slice:':6' == 'import' %}active{% endif %}"><span class="nav-icon">{% icon "upload" 17 %}</span>{% translate "CSV import" %}</a>
@@ -88,8 +90,8 @@
     {% else %}
       <a href="{% url 'dashboard' %}" class="{% if path == 'dashboard' %}active{% endif %}">{% icon "dashboard" 20 %}<span>Home</span></a>
       <a href="{% url 'transactions' %}" class="{% if path == 'transactions' or path == 'transaction_new' or path == 'transaction_detail' %}active{% endif %}">{% icon "transactions" 20 %}<span>Records</span></a>
+      <a href="{% url 'quick_add' %}" class="tab-log {% if path == 'quick_add' %}active{% endif %}">{% icon "plus" 20 %}<span>Log</span></a>
       <a href="{% url 'passport' %}" class="{% if path|slice:':8' == 'passport' %}active{% endif %}">{% icon "passport" 20 %}<span>Passport</span></a>
-      <a href="{% url 'sharing' %}" class="{% if path == 'sharing' or path|slice:':7' == 'consent' %}active{% endif %}">{% icon "shield-check" 20 %}<span>Sharing</span></a>
       <a href="{% url 'more' %}" class="{% if path == 'more' %}active{% endif %}">{% icon "menu" 20 %}<span>More</span></a>
     {% endif %}
   </nav>

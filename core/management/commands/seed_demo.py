@@ -114,11 +114,13 @@ class Command(BaseCommand):
         BusinessMembership.objects.create(user=owner, business=business, role=BusinessMembership.Role.OWNER)
         return business
 
-    def manual(self, business, user, day, direction, category, amount, description, counterparty=""):
+    def manual(self, business, user, day, direction, category, amount, description, counterparty="", payment_method=None):
+        method = payment_method or (self.rng.choice(["cash", "cash", "telebirr", "bank"]) if direction == "in" else
+                                    self.rng.choice(["cash", "telebirr", "bank"]))
         return services.record_manual(business, user, {
             "direction": direction, "category": category, "amount": Decimal(amount).quantize(Decimal("0.01")),
             "currency": "ETB", "occurred_on": day, "description": description, "counterparty": counterparty,
-            "is_demo": True,
+            "payment_method": method, "is_demo": True,
         })
 
     def abebe_coffee(self, admin):
@@ -151,12 +153,12 @@ class Command(BaseCommand):
             last = min(month_end(month), today())
             for _ in range(rng.randint(3, 5)):
                 day = month + dt.timedelta(days=rng.randint(0, (last - month).days))
-                self.manual(business, staff, day, "in", "sales", rng.randint(40, 95) * 100, "Café counter cash sales (week)", "Walk-in customers")
+                self.manual(business, owner, day, "in", "sales", rng.randint(40, 95) * 100, "Café counter cash sales (week)", "Walk-in customers")
             for desc, cat, low, high, party in (("Packaging and bags", "stock", 25, 60, "Merkato packaging supplier"),
                                                 ("Fuel for delivery van", "transport", 15, 35, "Fuel station"),
                                                 ("Airtime and data", "telecom", 4, 9, "Mobile operator")):
                 day = month + dt.timedelta(days=rng.randint(0, (last - month).days))
-                txn = self.manual(business, staff, day, "out", cat, rng.randint(low, high) * 100, desc, party)
+                txn = self.manual(business, owner, day, "out", cat, rng.randint(low, high) * 100, desc, party)
                 if cat == "stock" and rng.random() < 0.7:
                     receipt_no += 1
                     pdf = demo_pdf(f"Receipt #{receipt_no}", [party, f"Date: {day:%d/%m/%Y}", f"Amount: ETB {txn.amount:,.2f}", desc])
@@ -180,17 +182,25 @@ class Command(BaseCommand):
         headers, _ = importing.parse(text)
         mapping = importing.guess_mapping(headers)
         mapping.update({"date_format": "dmy", "direction": "type", "counterparty": "customer"})
-        batch = ImportBatch.objects.create(business=business, uploaded_by=staff, filename="market-stall.csv", file_sha256=digest,
+        batch = ImportBatch.objects.create(business=business, uploaded_by=owner, filename="market-stall.csv", file_sha256=digest,
                                            raw_text=text, mapping=mapping, status=ImportBatch.Status.MAPPED)
-        importing.commit(batch, staff, is_demo=True)
+        importing.commit(batch, owner, is_demo=True)
 
         # A typo corrected with an amendment: the original stays, superseded.
         typo_day = add_months(month_start(today()), -2) + dt.timedelta(days=3)
-        typo = self.manual(business, staff, typo_day, "out", "maintenance", "45000", "Grinder repair", "Bole workshop")
+        typo = self.manual(business, owner, typo_day, "out", "maintenance", "45000", "Grinder repair", "Bole workshop")
         services.amend(typo, owner, {"direction": "out", "category": "maintenance", "amount": Decimal("4500.00"),
                                      "currency": "ETB", "occurred_on": typo_day, "description": "Grinder repair",
                                      "counterparty": "Bole workshop", "reference": ""},
                        "Extra zero typed; workshop invoice shows ETB 4,500")
+
+        # Staff entries waiting for the owner's approval (not counted until approved).
+        for days_back, amount, desc in ((1, "6200", "Café counter cash sales (today)"), (2, "1800", "Milk and sugar"),
+                                        (3, "950", "Taxi for delivery")):
+            day = today() - dt.timedelta(days=days_back)
+            self.manual(business, staff, day, "in" if "sales" in desc else "out",
+                        "sales" if "sales" in desc else ("stock" if "Milk" in desc else "transport"), amount, desc,
+                        payment_method="cash")
 
         # A dispute on a connector record (can't be amended — only annotated).
         disputed = Transaction.objects.filter(business=business, source_kind="connector", direction="out").order_by("-occurred_on")[3]
