@@ -169,7 +169,7 @@ DEFAULT_CURRENCY = "ETB"
 
 STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
-STATIC_ROOT = None if os.environ.get("VERCEL") else BASE_DIR / "staticfiles"
+STATIC_ROOT = BASE_DIR / "staticfiles"
 STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
     "staticfiles": {
