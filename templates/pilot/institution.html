@@ -1,0 +1,32 @@
+{% extends "app.html" %}
+{% load ui %}
+{% block title %}{{ institution.name }} · Console{% endblock %}
+{% block content %}
+<header class="page-header"><a class="back" href="{% url 'console_institutions' %}">{% icon "arrow-left" 14 %} Institutions</a>
+  <div class="row-between"><div><h1>{{ institution.name }}</h1><p>{{ institution.get_kind_display }}{% if institution.is_demo %} · demo{% endif %}{% if not institution.is_active %} · <span class="neg">suspended — all access refused</span>{% endif %}</p></div>
+  <form method="post" data-confirm="{% if institution.is_active %}Suspend all access for this institution?{% else %}Reactivate?{% endif %}">{% csrf_token %}<input type="hidden" name="action" value="toggle"><button class="btn {% if institution.is_active %}btn-danger{% else %}btn-secondary{% endif %} btn-sm" type="submit">{% if institution.is_active %}Suspend{% else %}Reactivate{% endif %}</button></form></div></header>
+
+{% if new_token %}<div class="notice notice-warn mb-2">{% icon "key" 16 %}<div><strong>Copy this API token now — it won't be shown again.</strong> Only a hash is stored.<div class="token-box mt-1 mono small">{{ new_token }}</div></div></div>{% endif %}
+{% if setup_link %}<div class="notice notice-info mb-2">{% icon "key" 16 %}<div><strong>One-time password setup link for the analyst:</strong><div class="token-box mt-1 mono small">{{ setup_link }}</div></div></div>{% endif %}
+
+<div class="grid-2">
+  <section class="card">
+    <p class="card-title mb-2">{% icon "users" 16 %} Analysts</p>
+    {% for a in analysts %}<p class="small">{{ a.user.display_name }} · {{ a.user.email }}</p>{% empty %}<p class="small muted">None yet.</p>{% endfor %}
+    <form method="post" class="form mt-2">{% csrf_token %}<input type="hidden" name="action" value="analyst">
+      <div class="field-row">{% include "_field.html" with field=analyst_form.name %}{% include "_field.html" with field=analyst_form.email %}</div>
+      <button class="btn btn-secondary btn-sm" type="submit">Add analyst</button></form>
+  </section>
+  <section class="card">
+    <p class="card-title mb-2">{% icon "key" 16 %} Partner API credentials</p>
+    {% for c in credentials %}
+      <div class="derived-row"><span class="small"><code>{{ c.key_id }}</code> · {{ c.label }}<br><small class="faint">{{ c.scopes|join:", " }}<br>expires {{ c.expires_at|date:"j M Y" }}{% if c.last_used_at %} · last used {{ c.last_used_at|date:"j M H:i" }}{% endif %}</small></span>
+        {% if c.revoked_at %}<span class="chip chip-danger">Revoked</span>{% elif c.expires_at < now %}<span class="chip">Expired</span>{% else %}<form method="post" data-confirm="Revoke {{ c.key_id }}? Calls using it fail immediately.">{% csrf_token %}<input type="hidden" name="action" value="revoke"><input type="hidden" name="credential" value="{{ c.pk }}"><button class="btn btn-danger btn-sm" type="submit">Revoke</button></form>{% endif %}</div>
+    {% empty %}<p class="small muted">No credentials issued.</p>{% endfor %}
+    <details class="disclosure mt-2"><summary>Issue a credential (rotation: issue new, then revoke old)</summary>
+      <form method="post" class="form disclosure-body">{% csrf_token %}<input type="hidden" name="action" value="credential">
+        {% include "_field.html" with field=credential_form.label %}{% include "_field.html" with field=credential_form.scopes %}{% include "_field.html" with field=credential_form.days %}
+        <button class="btn btn-primary btn-sm" type="submit">Issue</button></form></details>
+  </section>
+</div>
+{% endblock %}

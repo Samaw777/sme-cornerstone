@@ -1,0 +1,64 @@
+{% extends "app.html" %}
+{% load ui %}
+{% block title %}Transactions · {{ request.business.name }}{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <div class="row-between">
+    <div><p class="eyebrow">Records</p><h1>Transactions</h1>
+      <p>Money in and money out. Each record shows where it came from and how it's evidenced.</p></div>
+    <div class="row"><a class="btn btn-primary" href="{% url 'transaction_new' %}">{% icon "plus" 16 %} Record</a><a class="btn btn-secondary" href="{% url 'import_list' %}">{% icon "upload" 16 %} Import CSV</a></div>
+  </div>
+</header>
+
+<form method="get" class="form card filters" aria-label="Filter transactions">
+  <div class="field"><label class="label" for="f-from">From</label><input id="f-from" type="month" name="from" value="{{ filters.from }}"></div>
+  <div class="field"><label class="label" for="f-to">To</label><input id="f-to" type="month" name="to" value="{{ filters.to }}"></div>
+  <div class="field"><label class="label" for="f-src">Source</label><select id="f-src" name="source"><option value="">All sources</option>{% for v, t in sources %}<option value="{{ v }}" {% if filters.source == v %}selected{% endif %}>{{ t }}</option>{% endfor %}</select></div>
+  <div class="field"><label class="label" for="f-ev">Evidence</label><select id="f-ev" name="evidence"><option value="">All classes</option>{% for c in evidence_classes %}<option value="{{ c.value }}" {% if filters.evidence == c.value %}selected{% endif %}>{{ c.label }}</option>{% endfor %}</select></div>
+  <div class="field"><label class="label" for="f-dir">Type</label><select id="f-dir" name="direction"><option value="">In and out</option><option value="in" {% if filters.direction == "in" %}selected{% endif %}>Money in</option><option value="out" {% if filters.direction == "out" %}selected{% endif %}>Money out</option></select></div>
+  <div class="field"><label class="label" for="f-cat">Category</label><select id="f-cat" name="category"><option value="">All categories</option>{% for v, t in categories %}<option value="{{ v }}" {% if filters.category == v %}selected{% endif %}>{{ t }}</option>{% endfor %}</select></div>
+  <div class="field"><label class="label" for="f-st">Status</label><select id="f-st" name="status"><option value="">Current records</option><option value="all" {% if filters.status == "all" %}selected{% endif %}>Include corrected originals</option>{% for v, t in statuses %}{% if v != "active" %}<option value="{{ v }}" {% if filters.status == v %}selected{% endif %}>{{ t }}</option>{% endif %}{% endfor %}</select></div>
+  <div class="field"><label class="label" for="f-q">Search</label><input id="f-q" type="search" name="q" value="{{ filters.q }}" placeholder="Description or party"></div>
+  <div class="row"><button class="btn btn-secondary" type="submit">Filter</button><a class="btn btn-ghost" href="{% url 'transactions' %}">Clear</a></div>
+</form>
+{% for e in errors %}<div class="toast toast-error mt-1"><span>{{ e }}</span></div>{% endfor %}
+
+<section class="stats mt-2" style="grid-template-columns: repeat(3, 1fr)">
+  <div class="card"><p class="stat-label">Money in (current records)</p><p class="stat-value">{{ totals.in|etb }}</p></div>
+  <div class="card"><p class="stat-label">Money out (current records)</p><p class="stat-value">{{ totals.out|etb }}</p></div>
+  <div class="card"><p class="stat-label">Records shown</p><p class="stat-value">{{ totals.count }}</p></div>
+</section>
+
+<section class="card card-flush mt-2">
+  {% if page.object_list %}
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Source</th><th>Evidence</th><th class="num">Amount</th></tr></thead>
+    <tbody>
+    {% for t in page %}
+      <tr class="{% if t.status != 'active' %}row-struck{% endif %}">
+        <td class="nowrap">{{ t.occurred_on|date:"j M Y" }}</td>
+        <td class="primary"><a href="{% url 'transaction_detail' t.public_id %}">{{ t.description|default:t.get_category_display }}</a>{% if t.counterparty %}<small>{{ t.counterparty }}</small>{% endif %}{% if t.status != 'active' %}<small>{{ t.get_status_display }}</small>{% endif %}</td>
+        <td class="small">{{ t.get_category_display }}</td>
+        <td class="small nowrap">{{ t.get_source_kind_display }}{% if t.connected_source %}<small>{{ t.connected_source.display_name }}</small>{% endif %}</td>
+        <td>{% evidence_badge t.evidence_class t.is_demo %}</td>
+        <td class="num {% if t.direction == 'in' %}pos{% endif %}">{% if t.direction == 'out' %}−{% else %}+{% endif %}{{ t.amount|etb }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% if page.has_other_pages %}<div class="pagination" style="padding-bottom:1rem">
+    {% if page.has_previous %}<a class="btn btn-ghost btn-sm" href="?{{ query }}&page={{ page.previous_page_number }}">Previous</a>{% endif %}
+    <span>Page {{ page.number }} of {{ page.paginator.num_pages }}</span>
+    {% if page.has_next %}<a class="btn btn-ghost btn-sm" href="?{{ query }}&page={{ page.next_page_number }}">Next</a>{% endif %}
+  </div>{% endif %}
+  {% else %}
+  <div class="empty">
+    <span class="empty-icon">{% icon "transactions" 22 %}</span>
+    <strong>No records match</strong>
+    <p>Try a wider period or clear the filters. New here? Record your first sale or import last month's records.</p>
+    <div class="row"><a class="btn btn-primary btn-sm" href="{% url 'transaction_new' %}">Record a transaction</a></div>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

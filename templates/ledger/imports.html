@@ -1,0 +1,32 @@
+{% extends "app.html" %}
+{% load ui %}
+{% block title %}CSV import · {{ request.business.name }}{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <p class="eyebrow">Records</p><h1>CSV import</h1>
+  <p>Bring in records from a spreadsheet, POS or wallet export. You'll map columns and review every row before anything is saved. Imported rows are <strong>self-reported</strong>, and rows already imported are skipped automatically.</p>
+</header>
+{% include "ledger/_import_steps.html" with step=1 %}
+<div class="grid-2">
+  <form method="post" enctype="multipart/form-data" class="form card">
+    {% csrf_token %}
+    <p class="card-title mb-2">{% icon "upload" 16 %} Upload a file</p>
+    {% include "_field.html" with field=form.file %}
+    <p class="help mb-2">UTF-8 CSV, up to 1 MB / 5,000 rows. Comma, semicolon or tab separated.</p>
+    <div class="btn-row"><button class="btn btn-primary" type="submit">Continue {% icon "arrow-right" 16 %}</button><a class="btn btn-ghost" href="{% url 'import_template' %}">{% icon "download" 14 %} Template</a></div>
+  </form>
+  <section class="card card-flush">
+    <div class="card-head"><p class="card-title">{% icon "history" 16 %} Previous imports</p></div>
+    {% if batches %}
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th>File</th><th>Status</th><th class="num">Imported</th><th class="num">Skipped</th></tr></thead>
+      <tbody>{% for b in batches %}
+        <tr><td class="primary"><a href="{% url 'import_preview' b.pk %}">{{ b.filename }}</a><small>{{ b.created_at|date:"j M Y H:i" }}</small></td><td class="small">{{ b.get_status_display }}</td>
+          <td class="num">{% if b.status == "committed" %}{{ b.rows_imported }}{% else %}—{% endif %}</td><td class="num">{% if b.status == "committed" %}{{ b.rows_duplicate|add:b.rows_error }}{% else %}—{% endif %}</td></tr>
+      {% endfor %}</tbody>
+    </table></div>
+    {% else %}<div class="empty"><span class="empty-icon">{% icon "upload" 20 %}</span><strong>No imports yet</strong><p>Download the template to see the expected columns.</p></div>{% endif %}
+  </section>
+</div>
+{% endblock %}

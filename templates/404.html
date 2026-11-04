@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Not found · SME Cornerstone{% endblock %}
+{% block body %}
+<main class="main"><div class="card empty mt-3">
+  <span class="empty-icon">{% icon "info" 22 %}</span>
+  <strong>Page not found</strong>
+  <p>It may have moved, or it belongs to another account.</p>
+  <div class="row"><a class="btn btn-secondary" href="{% url 'home' %}">Go to your workspace</a></div>
+</div></main>
+{% endblock %}

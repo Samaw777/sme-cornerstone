@@ -1,0 +1,161 @@
+{% load ui %}
+{# The Business Financial Passport. `data` is a passport dict; sections appear only if in scope. #}
+<div class="report">
+  <section class="card report-head">
+    <div class="row-between">
+      <div>
+        <p class="eyebrow">Business Financial Passport{% if snapshot %} · v{{ snapshot.version }}{% elif preview %} · live preview{% endif %}</p>
+        <h2>{% firstof data.profile.name business_name "Business" %}</h2>
+        <p class="muted small">{{ data.period.label }} · {{ data.period.months_with_records }} of {{ data.period.months }} months with records</p>
+      </div>
+      <div class="row">
+        {% if data.includes_demo_data %}<span class="badge badge-demo">Contains demo data</span>{% endif %}
+        {% if data.history.limited %}<span class="chip chip-warn">{% icon "alert" 13 %} Limited history</span>{% endif %}
+        <span class="chip">Method {{ data.calculation_version }}</span>
+      </div>
+    </div>
+    <p class="disclaimer mt-2">{{ data.disclaimer }}</p>
+    <dl class="facts mt-2">
+      <dt>Generated</dt><dd>{% if snapshot %}{{ snapshot.generated_at|date:"j M Y, H:i" }}{% else %}Not saved — preview only{% endif %}</dd>
+      <dt>Recorded history</dt><dd>{{ data.history.available_months }} month{{ data.history.available_months|pluralize }}{% if data.history.first_record %} since first record on {{ data.history.first_record }}{% else %} — no records yet{% endif %}</dd>
+      {% if data.sharing %}
+      <dt>Authorised recipient</dt><dd>{{ data.sharing.recipient }}</dd>
+      <dt>Purpose</dt><dd>{{ data.sharing.purpose }}{% if data.sharing.purpose_detail %} — {{ data.sharing.purpose_detail }}{% endif %}</dd>
+      <dt>Consent reference</dt><dd><code>{{ data.sharing.consent_reference }}</code></dd>
+      {% endif %}
+    </dl>
+  </section>
+
+  {% if data.profile %}
+  <section class="card report-section">
+    <h3>{% icon "building" 16 %} Business profile</h3>
+    <p class="section-note">Merchant-provided unless marked as validated.</p>
+    <dl class="facts mt-2">
+      <dt>Sector</dt><dd>{{ data.profile.sector }}</dd>
+      <dt>Location</dt><dd>{{ data.profile.location }}</dd>
+      <dt>Operating since</dt><dd>{{ data.profile.operating_since }} <span class="badge badge-muted">Merchant-provided</span></dd>
+      {% if data.profile.legal_name %}<dt>Legal name</dt><dd>{{ data.profile.legal_name }}</dd>{% endif %}
+      <dt>TIN</dt><dd>{{ data.profile.tin.value|default:"Not provided" }} {% if data.profile.tin.value %}<span class="badge {% if data.profile.tin.status == 'platform_validated' %}ev-verified{% else %}badge-muted{% endif %}">{{ data.profile.tin.status_label }}</span>{% endif %}</dd>
+      <dt>Trade licence</dt><dd>{{ data.profile.trade_license.value|default:"Not provided" }} {% if data.profile.trade_license.value %}<span class="badge {% if data.profile.trade_license.status == 'platform_validated' %}ev-verified{% else %}badge-muted{% endif %}">{{ data.profile.trade_license.status_label }}</span>{% endif %}</dd>
+      <dt>Authorised users</dt><dd>{{ data.profile.authorized_users }}</dd>
+    </dl>
+  </section>
+  {% endif %}
+
+  {% if data.monthly %}
+  <section class="card report-section">
+    <div class="card-head">
+      <div><h3>{% icon "trending-up" 16 %} Revenue and operating expenses</h3>
+        <p class="section-note">{{ data.totals.basis }}</p></div>
+    </div>
+    {% monthly_chart data.monthly %}
+  </section>
+
+  <section class="card report-section card-flush">
+    <div class="card-head"><div><h3>{% icon "wallet" 16 %} Monthly cash movement</h3>
+      <p class="section-note">Cash movement includes loans, owner capital, drawings and equipment. It is not profit.</p></div></div>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Month</th><th class="num">Revenue</th><th class="num">Operating expenses</th><th class="num">Cash in</th><th class="num">Cash out</th><th class="num">Net cash movement</th></tr></thead>
+        <tbody>
+        {% for m in data.monthly %}
+          {% if m.state == "recorded" %}
+          <tr><td class="nowrap">{{ m.label }}{% if m.in_progress %} <span class="chip">in progress</span>{% endif %}</td><td class="num">{{ m.revenue|etb }}</td><td class="num">{{ m.operating_expenses|etb }}</td><td class="num">{{ m.inflows|etb }}</td><td class="num">{{ m.outflows|etb }}</td><td class="num">{{ m.net_cash_movement|etb }}</td></tr>
+          {% else %}
+          <tr class="row-muted"><td class="nowrap">{{ m.label }}</td><td colspan="5">{% if m.state == "no_records" %}<span class="unknown">No records — figures unknown, not zero</span>{% else %}Before recorded history{% endif %}</td></tr>
+          {% endif %}
+        {% endfor %}
+        </tbody>
+        <tfoot><tr><td>Recorded months</td><td class="num">{{ data.totals.revenue|etb }}</td><td class="num">{{ data.totals.operating_expenses|etb }}</td><td class="num">{{ data.totals.inflows|etb }}</td><td class="num">{{ data.totals.outflows|etb }}</td><td class="num">{{ data.totals.net_cash_movement|etb }}</td></tr></tfoot>
+      </table>
+    </div>
+    <div style="padding: 1rem 1.25rem 1.25rem">{% monthly_chart data.monthly "net" %}</div>
+  </section>
+
+  <section class="card report-section">
+    <h3>{% icon "sparkles" 16 %} Derived metrics {% evidence_badge "derived" %}</h3>
+    <p class="section-note">Calculated from the counted records above. Not additional evidence.</p>
+    <div class="mt-1">
+      <div class="derived-row"><span>Revenue less operating expenses <small class="faint">(cash basis — not accounting profit)</small></span><strong>{{ data.totals.revenue_less_operating_expenses|etb }}</strong></div>
+      <div class="derived-row"><span>Revenue trend{% if data.trend.available %} <small class="faint">{{ data.trend.recent_months }} vs {{ data.trend.prior_months }}</small>{% endif %}</span>
+        {% if data.trend.available %}<strong class="{% if data.trend.change_percent|slice:':1' == '-' %}neg{% else %}pos{% endif %}">{{ data.trend.change_percent }}%</strong>{% else %}<span class="muted small right">Not shown — {{ data.trend.reason }}</span>{% endif %}</div>
+      <div class="derived-row"><span>Seasonality</span>
+        {% if data.seasonality.available %}<span class="right small">Highest {{ data.seasonality.peak }}, lowest {{ data.seasonality.trough }}<br><span class="faint">{{ data.seasonality.note }}</span></span>{% else %}<span class="muted small right">Not shown — {{ data.seasonality.reason }}</span>{% endif %}</div>
+      <div class="derived-row"><span>Revenue variability <small class="faint">(coefficient of variation)</small></span>
+        {% if data.variability.available %}<strong>{{ data.variability.coefficient_of_variation }}</strong>{% else %}<span class="muted small right">Not shown — {{ data.variability.reason }}</span>{% endif %}</div>
+    </div>
+  </section>
+  {% endif %}
+
+  {% if data.evidence %}
+  <section class="card report-section">
+    <h3>{% icon "shield-check" 16 %} Evidence breakdown</h3>
+    <p class="section-note">Denominator: {{ data.evidence.denominator }} = {{ data.evidence.denominator_amount|etb }} across {{ data.evidence.record_count }} records.</p>
+    {% if data.evidence.record_count %}
+    <div class="ev-bar mt-2" role="img" aria-label="Evidence coverage">
+      {% for row in data.evidence.by_class %}{% if row.percent %}<span class="{{ row.class|evidence_css }}" style="width: {{ row.percent }}%"></span>{% endif %}{% endfor %}
+    </div>
+    {% endif %}
+    <div class="table-wrap mt-2">
+      <table class="table">
+        <thead><tr><th>Evidence class</th><th class="num">Amount</th><th class="num">Share</th><th class="num">Records</th><th class="num">Money in</th><th class="num">Money out</th></tr></thead>
+        <tbody>{% for row in data.evidence.by_class %}
+          <tr><td>{% evidence_badge row.class %}{% if row.demo_amount != "0.00" %} <span class="badge badge-demo" title="Of which demo data">{{ row.demo_amount|etb_plain }} demo</span>{% endif %}<small>{{ row.explanation }}</small></td>
+            <td class="num">{{ row.amount|etb }}</td><td class="num">{{ row.percent|percent }}</td><td class="num">{{ row.count }}</td><td class="num">{{ row.inflow_amount|etb }}</td><td class="num">{{ row.outflow_amount|etb }}</td></tr>
+        {% endfor %}</tbody>
+      </table>
+    </div>
+    <p class="small muted mt-1">Linked documents: {{ data.evidence.documents.linked_documents }} ({{ data.evidence.documents.reviewed }} reviewed by platform staff, {{ data.evidence.documents.checks_only }} with file checks only — content not independently validated).</p>
+    {% for s in data.evidence.sources %}<p class="small mt-1">{% icon "plug" 14 %} {{ s.name }} {{ s.account }} {% if s.is_demo %}<span class="badge badge-demo">Demo source — not a real bank connection</span>{% endif %}</p>{% endfor %}
+  </section>
+  {% endif %}
+
+  {% if data.receivables %}
+  <section class="card report-section">
+    <h3>{% icon "receipt" 16 %} Recorded receivables and obligations</h3>
+    <div class="grid-2 mt-2">
+      <div>
+        <p class="eyebrow mb-1">Outstanding invoices · as of {{ data.receivables.as_of }}</p>
+        {% for a in data.receivables.aging %}<div class="derived-row"><span>{{ a.bucket }}</span><span>{{ a.amount|etb }}</span></div>{% endfor %}
+        <div class="derived-row"><strong>Total ({{ data.receivables.open_invoices }} open)</strong><strong>{{ data.receivables.outstanding_total|etb }}</strong></div>
+        <p class="tiny faint mt-1">{{ data.receivables.note }}</p>
+      </div>
+      <div>
+        <p class="eyebrow mb-1">Recurring obligations</p>
+        {% for o in data.obligations.items %}<div class="derived-row"><span>{{ o.name }}<br><small class="faint">{{ o.type }} · {{ o.amount|etb_plain }} {{ o.frequency|lower }}</small></span><span>{{ o.monthly_equivalent|etb }}/mo</span></div>
+        {% empty %}<p class="muted small">No obligations recorded.</p>{% endfor %}
+        {% if data.obligations.items %}<div class="derived-row"><strong>Monthly equivalent</strong><strong>{{ data.obligations.monthly_equivalent_total|etb }}</strong></div>{% endif %}
+        <p class="tiny faint mt-1">{{ data.obligations.note }}</p>
+      </div>
+    </div>
+  </section>
+  {% endif %}
+
+  {% if data.data_quality %}
+  <section class="card report-section">
+    <h3>{% icon "alert" 16 %} Data-quality indicators</h3>
+    <p class="section-note">{{ data.data_quality.note }}</p>
+    <dl class="facts mt-2">
+      <dt>Reconciliation</dt><dd>{{ data.data_quality.reconciliation }}</dd>
+      <dt>Months without records</dt><dd>{{ data.data_quality.missing_months|join:", "|default:"None" }}</dd>
+    </dl>
+    <div class="mt-2">
+      {% for f in data.data_quality.findings %}
+        <div class="finding"><strong>{{ f.title }}</strong> <span class="chip">{{ f.type }}</span><p>{{ f.detail }}</p>{% if f.merchant_note %}<div class="merchant-note">Merchant note: {{ f.merchant_note }}</div>{% endif %}</div>
+      {% empty %}<p class="muted small">No indicators in this period.</p>{% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  <section class="card report-section">
+    <h3>{% icon "info" 16 %} Material limitations</h3>
+    <ul class="limitations mt-2">{% for line in data.limitations %}<li>{{ line }}</li>{% endfor %}</ul>
+  </section>
+
+  <details class="disclosure card" style="padding:0">
+    <summary>Calculation methods (version {{ data.calculation_version }})</summary>
+    <div class="disclosure-body">
+      <dl class="facts">{% for m in data.methods %}<dt>{{ m.metric }}</dt><dd class="small">{{ m.method }}</dd>{% endfor %}</dl>
+    </div>
+  </details>
+</div>

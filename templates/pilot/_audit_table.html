@@ -1,0 +1,10 @@
+<div class="table-wrap"><table class="table">
+  <thead><tr><th>When</th><th>Action</th><th>Actor</th><th>Organisation</th><th>Detail</th></tr></thead>
+  <tbody>{% for e in events %}
+    <tr><td class="small nowrap">{{ e.created_at|date:"j M H:i" }}</td>
+      <td class="small">{{ e.action }} {% if e.outcome == "denied" %}<span class="chip chip-danger">denied</span>{% endif %}</td>
+      <td class="small">{{ e.actor_label|default:"—" }}</td>
+      <td class="small">{{ e.business.name|default:"" }}{% if e.business and e.institution %} · {% endif %}{{ e.institution.name|default:"" }}</td>
+      <td class="tiny faint">{% for k, v in e.detail.items %}{{ k }}={{ v }}{% if not forloop.last %}, {% endif %}{% endfor %}</td></tr>
+  {% empty %}<tr><td colspan="5" class="muted small">No events.</td></tr>{% endfor %}</tbody>
+</table></div>

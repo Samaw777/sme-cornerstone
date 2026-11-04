@@ -1,0 +1,11 @@
+{% extends "app.html" %}
+{% load ui %}
+{% block title %}Not available · SME Cornerstone{% endblock %}
+{% block content %}
+<div class="card empty">
+  <span class="empty-icon">{% icon "lock" 22 %}</span>
+  <strong>You don't have access to this</strong>
+  <p>{{ reason|default:"Your role doesn't include this page." }}</p>
+  <div class="row"><a class="btn btn-secondary" href="{% url 'home' %}">Go to your workspace</a></div>
+</div>
+{% endblock %}

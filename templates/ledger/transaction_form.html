@@ -1,0 +1,58 @@
+{% extends "app.html" %}
+{% load ui %}
+{% block title %}Record a transaction · {{ request.business.name }}{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <a class="back" href="{% url 'transactions' %}">{% icon "arrow-left" 14 %} Transactions</a>
+  <h1>Record a transaction</h1>
+  <p>Manual entries are <strong>self-reported</strong>. Attach a receipt afterwards to make them evidence-supported.</p>
+</header>
+
+<form method="post" class="form card" style="max-width: 40rem">
+  {% csrf_token %}
+  {% include "_form_errors.html" %}
+  <div class="field">
+    <span class="label">Type</span>
+    <div class="segmented" role="radiogroup">
+      {% for choice in form.direction %}<label>{{ choice.tag }}<span>{{ choice.choice_label }}</span></label>{% endfor %}
+    </div>
+  </div>
+  <div class="field-row">{% include "_field.html" with field=form.occurred_on %}{% include "_field.html" with field=form.amount %}</div>
+  <div class="field{% if form.category.errors %} has-error{% endif %}">
+    <label class="label" for="id_category">Category</label>
+    <select name="category" id="id_category">
+      <optgroup label="Money in" data-direction="in">{% for v, t in in_categories %}<option value="{{ v }}" {% if form.category.value == v %}selected{% endif %}>{{ t }}</option>{% endfor %}</optgroup>
+      <optgroup label="Money out" data-direction="out">{% for v, t in out_categories %}<option value="{{ v }}" {% if form.category.value == v %}selected{% endif %}>{{ t }}</option>{% endfor %}</optgroup>
+    </select>
+    {% for error in form.category.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+    <p class="help">Loans, owner capital, drawings and equipment are cash movement but not revenue or operating expense.</p>
+  </div>
+  {% include "_field.html" with field=form.counterparty %}
+  {% include "_field.html" with field=form.description %}
+  {% include "_field.html" with field=form.reference %}
+  <div class="btn-row"><button class="btn btn-primary" type="submit">Save</button><button class="btn btn-secondary" type="submit" name="another" value="1">Save and add another</button></div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function () {
+    var select = document.getElementById("id_category");
+    function sync() {
+      var dir = (document.querySelector("input[name=direction]:checked") || {}).value || "in";
+      select.querySelectorAll("optgroup").forEach(function (g) {
+        var match = g.dataset.direction === dir;
+        g.hidden = !match;
+        g.querySelectorAll("option").forEach(function (o) { o.disabled = !match; });
+      });
+      if (select.selectedOptions[0] && select.selectedOptions[0].disabled) {
+        var first = select.querySelector("optgroup[data-direction=" + dir + "] option");
+        if (first) first.selected = true;
+      }
+    }
+    document.querySelectorAll("input[name=direction]").forEach(function (r) { r.addEventListener("change", sync); });
+    sync();
+  })();
+</script>
+{% endblock %}

@@ -1,0 +1,43 @@
+{% load static i18n %}{% get_current_language as LANGUAGE_CODE %}<!doctype html>
+<html lang="{{ LANGUAGE_CODE|default:'en' }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Financial records and a shareable Business Financial Passport for small businesses.">
+  <meta name="theme-color" content="#0b1220">
+  <meta name="referrer" content="same-origin">
+  <link rel="icon" href="{% static 'icons/icon-192.png' %}">
+  <link rel="manifest" href="{% url 'manifest' %}">
+  <link rel="apple-touch-icon" href="{% static 'icons/apple-touch-icon.png' %}">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Cornerstone">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <title>{% block title %}SME Cornerstone{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+</head>
+<body>
+  <div class="backdrop" aria-hidden="true"></div>
+  {% if demo_mode %}<div class="demo-ribbon" role="note">Demo environment · all businesses, banks and figures are synthetic</div>{% endif %}
+  {% block body %}{% endblock %}
+  <script>
+    // Loading state: disable a form's submit button while the request runs.
+    document.addEventListener("submit", function (event) {
+      var form = event.target;
+      if (form.dataset.confirm && !window.confirm(form.dataset.confirm)) { event.preventDefault(); return; }
+      var button = event.submitter || form.querySelector("[type=submit]");
+      if (button && !form.hasAttribute("data-no-loading")) {
+        setTimeout(function () { button.setAttribute("data-loading", "true"); }, 0);
+      }
+    });
+    // Restore buttons when returning with the back button.
+    window.addEventListener("pageshow", function () {
+      document.querySelectorAll("[data-loading]").forEach(function (b) { b.removeAttribute("data-loading"); });
+    });
+  </script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

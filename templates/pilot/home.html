@@ -1,0 +1,22 @@
+{% extends "app.html" %}
+{% load ui %}
+{% block title %}Console · SME Cornerstone{% endblock %}
+{% block content %}
+<header class="page-header"><p class="eyebrow">Platform console</p><h1>Overview</h1>
+  <p>Manage organisations and the pilot. Merchant financial records aren't visible here unless you open audited, time-limited support access to one business.</p></header>
+<section class="stats">
+  <a class="card" href="{% url 'console_businesses' %}"><p class="stat-label">{% icon "building" 14 %} Businesses</p><p class="stat-value">{{ counts.businesses }}</p></a>
+  <a class="card" href="{% url 'console_institutions' %}"><p class="stat-label">{% icon "landmark" 14 %} Institutions</p><p class="stat-value">{{ counts.institutions }}</p></a>
+  <div class="card"><p class="stat-label">{% icon "users" 14 %} Users</p><p class="stat-value">{{ counts.users }}</p></div>
+  <a class="card" href="{% url 'console_issues' %}"><p class="stat-label">{% icon "alert" 14 %} Open issues</p><p class="stat-value">{{ counts.issues }}</p></a>
+</section>
+<section class="card mt-2">
+  <div class="card-head"><p class="card-title">{% icon "gauge" 16 %} Pilot</p><a class="chip" href="{% url 'console_pilot' %}">Measurement</a></div>
+  {% if pilot %}<dl class="facts"><dt>Pilot</dt><dd>{{ pilot.name }}</dd><dt>Partner</dt><dd>{{ pilot.institution.name }}</dd><dt>Dates</dt><dd>{{ pilot.start_date|date:"j M Y" }} – {{ pilot.end_date|date:"j M Y"|default:"open" }}</dd></dl>
+  {% else %}<p class="muted small">No pilot configured yet. <a class="link" href="{% url 'console_pilot' %}">Set it up</a>.</p>{% endif %}
+</section>
+<section class="card card-flush mt-2">
+  <div class="card-head"><p class="card-title">{% icon "shield-check" 16 %} Recent audit events</p><a class="chip" href="{% url 'console_audit' %}">All</a></div>
+  {% include "pilot/_audit_table.html" with events=recent %}
+</section>
+{% endblock %}

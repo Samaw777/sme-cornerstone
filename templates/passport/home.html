@@ -1,0 +1,36 @@
+{% extends "app.html" %}
+{% load ui %}
+{% block title %}Financial passport · {{ request.business.name }}{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <div class="row-between">
+    <div><p class="eyebrow">Passport</p><h1>Business Financial Passport</h1>
+      <p>A standard report of your recorded history that you can save, download and choose to share. Preview it below, then generate a saved version.</p></div>
+    <div class="row no-print">
+      <form method="post" action="{% url 'passport_generate' %}?{{ request.GET.urlencode }}">{% csrf_token %}<button class="btn btn-primary" type="submit">{% icon "passport" 16 %} Generate &amp; save</button></form>
+      {% if can_share %}<a class="btn btn-secondary" href="{% url 'consent_new' %}">{% icon "shield-check" 16 %} Share with a bank/MFI</a>{% endif %}
+    </div>
+  </div>
+</header>
+
+{% include "_period.html" %}
+
+<div class="mt-2">{% include "passport/_report.html" with business_name=request.business.name %}</div>
+
+<section class="card card-flush mt-2">
+  <div class="card-head"><p class="card-title">{% icon "history" 16 %} Saved passports</p></div>
+  {% if snapshots %}
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>Version</th><th>Period</th><th>Generated</th><th>For</th><th></th></tr></thead>
+    <tbody>{% for s in snapshots %}
+      <tr><td class="primary"><a href="{% url 'passport_snapshot' s.public_id %}">v{{ s.version }}</a><small>method {{ s.calculation_version.version }}</small></td>
+        <td class="small nowrap">{{ s.period_start|date:"M Y" }} – {{ s.period_end|date:"M Y" }}</td>
+        <td class="small nowrap">{{ s.generated_at|date:"j M Y H:i" }}</td>
+        <td class="small">{% if s.consent %}{{ s.consent.institution.name }}<small>{{ s.consent.reference }}</small>{% else %}Your records{% endif %}</td>
+        <td><a class="btn btn-ghost btn-sm" href="{% url 'passport_pdf' s.public_id %}">{% icon "download" 14 %} PDF</a></td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+  {% else %}<div class="empty"><span class="empty-icon">{% icon "passport" 20 %}</span><strong>No saved passports yet</strong><p>Generate one to keep a frozen copy you can download as a PDF.</p></div>{% endif %}
+</section>
+{% endblock %}

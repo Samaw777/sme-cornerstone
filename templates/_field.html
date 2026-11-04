@@ -1,0 +1,17 @@
+{% load ui %}
+{% with wt=field.widget_type %}
+<div class="field{% if field.errors %} has-error{% endif %}">
+  {% if wt == "checkbox" %}
+    <label class="check">{{ field }}<span>{{ field.label }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}</span></label>
+  {% else %}
+    <label class="label" for="{{ field.id_for_label }}">{{ field.label }}{% if not field.field.required %} <span class="faint">optional</span>{% endif %}</label>
+    {% if wt == "checkboxselectmultiple" or wt == "radioselect" %}
+      <div class="choice-list">{% for choice in field %}<label>{{ choice.tag }}<span>{{ choice.choice_label }}{% if help_map %}{% with h=help_map|get:choice.data.value %}{% if h %}<small>{{ h }}</small>{% endif %}{% endwith %}{% endif %}</span></label>{% endfor %}</div>
+    {% else %}
+      {{ field }}
+    {% endif %}
+    {% if field.help_text %}<p class="help">{{ field.help_text }}</p>{% endif %}
+  {% endif %}
+  {% for error in field.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+</div>
+{% endwith %}

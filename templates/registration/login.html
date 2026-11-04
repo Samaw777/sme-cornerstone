@@ -1,0 +1,52 @@
+{% extends "auth.html" %}
+{% load ui %}
+
+{% block title %}Sign in · SME Cornerstone{% endblock %}
+
+{% block content %}
+<h1>Welcome <em>back</em></h1>
+<p class="lede">Sign in to your business workspace, analyst portal or console.</p>
+
+<form method="post" class="form">
+  {% csrf_token %}
+  <div class="field">
+    <label class="label" for="id_username">Email</label>
+    <input type="email" id="id_username" name="username" value="{{ form.username.value|default:'' }}" placeholder="you@example.com" autocomplete="email" required autofocus>
+  </div>
+  <div class="field">
+    <label class="label" for="id_password">Password <a class="field-link" href="{% url 'password_reset' %}">Forgot?</a></label>
+    <input type="password" id="id_password" name="password" placeholder="••••••••" autocomplete="current-password" required>
+  </div>
+  {% if form.errors %}<ul class="errors"><li>That email and password don't match an account.</li></ul>{% endif %}
+  <input type="hidden" name="next" value="{{ next }}">
+  <button type="submit" class="btn btn-primary btn-lg">Sign in {% icon "arrow-right" 18 %}</button>
+</form>
+
+<p class="auth-switch">Running a business? <a href="{% url 'signup' %}">Create an account</a></p>
+
+{% if demo_mode %}
+<details class="disclosure demo-accounts">
+  <summary>Demo accounts (synthetic data)</summary>
+  <div class="disclosure-body">
+    <p class="muted mb-1">Password for all: <code>cornerstone-demo-2026</code></p>
+    <table>
+      {% for email, role in demo_accounts %}
+      <tr><td><button type="button" data-email="{{ email }}">{{ email }}</button></td><td class="muted right">{{ role }}</td></tr>
+      {% endfor %}
+    </table>
+  </div>
+</details>
+{% endif %}
+<p class="auth-trust">{% icon "lock" 14 %} Each business only ever sees its own records.</p>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.querySelectorAll(".demo-accounts button[data-email]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      document.getElementById("id_username").value = b.dataset.email;
+      document.getElementById("id_password").value = "cornerstone-demo-2026";
+    });
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends "app.html" %}
+{% load ui %}
+{% block title %}Data quality · {{ request.business.name }}{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <p class="eyebrow">Records</p><h1>Data quality</h1>
+  <p>Automatic checks that help you keep complete, consistent records. They're neutral prompts — not judgements about your business. Add an explanation and it appears next to the indicator in your passport.</p>
+</header>
+
+<section class="card">
+  {% for f in findings %}
+    <div class="finding">
+      <div class="row-between"><strong>{{ f.title }}</strong><span class="row"><span class="chip">{{ f.get_code_display }}</span>{% if f.status == "acknowledged" %}<span class="chip chip-ok">Explained</span>{% endif %}</span></div>
+      <p>{{ f.detail }}</p>
+      {% if f.merchant_note %}<div class="merchant-note">Your note: {{ f.merchant_note }}</div>{% endif %}
+      {% if can_note %}
+      <details class="disclosure mt-1"><summary>{% if f.merchant_note %}Edit explanation{% else %}Add explanation{% endif %}</summary>
+        <form method="post" action="{% url 'finding_note' f.pk %}" class="form disclosure-body">{% csrf_token %}
+          <textarea name="note" rows="2" maxlength="500" placeholder="e.g. Shop closed for renovation in this month">{{ f.merchant_note }}</textarea>
+          <button class="btn btn-secondary btn-sm mt-1" type="submit">Save</button></form></details>
+      {% endif %}
+    </div>
+  {% empty %}
+    <div class="empty"><span class="empty-icon">{% icon "circle-check" 22 %}</span><strong>No open indicators</strong><p>Your records pass every current check.</p></div>
+  {% endfor %}
+</section>
+
+{% if resolved %}
+<details class="disclosure card mt-2" style="padding:0"><summary>No longer detected ({{ resolved|length }})</summary>
+  <div class="disclosure-body">{% for f in resolved %}<div class="finding"><strong class="muted">{{ f.title }}</strong></div>{% endfor %}</div></details>
+{% endif %}
+{% endblock %}

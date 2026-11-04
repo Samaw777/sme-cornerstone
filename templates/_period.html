@@ -1,0 +1,14 @@
+<form method="get" class="form row no-print" aria-label="Reporting period">
+  <div class="segmented" role="group" aria-label="Preset periods">
+    {% for key, text in period_presets %}<a href="?preset={{ key }}" class="{% if preset == key %}active{% endif %}">{{ text }}</a>{% endfor %}
+  </div>
+  <details class="disclosure" {% if preset == "custom" or period_errors %}open{% endif %}>
+    <summary>Custom</summary>
+    <div class="disclosure-body row">
+      <input class="input" type="month" name="from" value="{{ start|date:'Y-m' }}" aria-label="From month" style="width:auto">
+      <input class="input" type="month" name="to" value="{{ end|date:'Y-m' }}" aria-label="To month" style="width:auto">
+      <button class="btn btn-secondary btn-sm" type="submit">Apply</button>
+    </div>
+  </details>
+</form>
+{% for error in period_errors %}<div class="toast toast-error mt-1"><span>{{ error }}</span></div>{% endfor %}

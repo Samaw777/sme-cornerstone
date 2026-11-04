@@ -1,0 +1,16 @@
+{% extends "app.html" %}
+{% load ui %}
+{% block title %}Institutions · Console{% endblock %}
+{% block content %}
+<header class="page-header"><p class="eyebrow">Platform console</p><h1>Banks and MFIs</h1></header>
+<div class="grid-2">
+<section class="card card-flush"><div class="table-wrap"><table class="table">
+  <thead><tr><th>Institution</th><th class="num">Analysts</th><th class="num">Consents</th></tr></thead>
+  <tbody>{% for i in institutions %}<tr><td class="primary"><a href="{% url 'console_institution' i.public_id %}">{{ i.name }}</a><small>{{ i.get_kind_display }}{% if i.is_pilot_partner %} · pilot partner{% endif %}{% if i.is_demo %} · demo{% endif %}{% if not i.is_active %} · suspended{% endif %}</small></td><td class="num">{{ i.analyst_count }}</td><td class="num">{{ i.consent_count }}</td></tr>
+  {% empty %}<tr><td colspan="3"><div class="empty"><strong>No institutions yet</strong></div></td></tr>{% endfor %}</tbody>
+</table></div></section>
+<form method="post" class="form card">{% csrf_token %}<p class="card-title mb-2">{% icon "plus" 16 %} Add institution</p>
+  {% include "_form_errors.html" %}{% include "_field.html" with field=form.name %}{% include "_field.html" with field=form.kind %}{% include "_field.html" with field=form.contact_email %}{% include "_field.html" with field=form.is_pilot_partner %}
+  <button class="btn btn-primary" type="submit">Add</button></form>
+</div>
+{% endblock %}

@@ -1,0 +1,6 @@
+<ol class="steps" aria-label="Import steps">
+  <li class="{% if step == 1 %}current{% else %}done{% endif %}"><b>1</b>Upload</li>
+  <li class="{% if step == 2 %}current{% elif step > 2 %}done{% endif %}"><b>2</b>Map columns</li>
+  <li class="{% if step == 3 %}current{% elif step > 3 %}done{% endif %}"><b>3</b>Review</li>
+  <li class="{% if step == 4 %}current done{% endif %}"><b>4</b>Imported</li>
+</ol>

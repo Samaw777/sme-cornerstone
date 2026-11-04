@@ -1,0 +1,79 @@
+{% extends "app.html" %}
+{% load ui %}
+{% block title %}Pilot measurement · Console{% endblock %}
+{% block content %}
+<header class="page-header">
+  <p class="eyebrow">Platform console</p><h1>Pilot measurement</h1>
+  <p>Platform figures are computed from records. Review time, effort and feedback come only from manual entries with a named source — nothing is estimated.</p>
+</header>
+
+<div class="segmented mb-2"><a href="?" class="{% if not m.include_demo %}active{% endif %}">Real data only</a><a href="?demo=1" class="{% if m.include_demo %}active{% endif %}">Include demo data</a></div>
+{% if m.include_demo %}<div class="notice notice-demo mb-2">{% icon "flask" 16 %}<span>Including synthetic demo businesses. Don't report these figures as pilot results.</span></div>{% endif %}
+
+<section class="stats">
+  <div class="card"><p class="stat-label">Active merchants (30 days)</p><p class="stat-value">{{ m.merchants_active_30d }}</p><p class="stat-note">of {{ m.merchants_total }} registered</p></div>
+  <div class="card"><p class="stat-label">Median usable months (last 12)</p><p class="stat-value">{{ m.median_usable_months|default_if_none:"—" }}</p><p class="stat-note">{% for k, v in m.history_distribution %}{{ k }}: {{ v }}{% if not forloop.last %} · {% endif %}{% endfor %}</p></div>
+  <div class="card"><p class="stat-label">Passports generated</p><p class="stat-value">{{ m.passports_merchant }}</p><p class="stat-note">+ {{ m.passports_shared }} consent-scoped versions</p></div>
+  <div class="card"><p class="stat-label">Authorised accesses</p><p class="stat-value">{{ m.accesses_total }}</p><p class="stat-note">{% for a in m.accesses_by_channel %}{{ a.channel }} {{ a.n }}{% if not forloop.last %} · {% endif %}{% endfor %} · {{ m.denied_attempts }} denied</p></div>
+</section>
+
+<div class="grid-2 mt-2">
+  <section class="card">
+    <p class="card-title mb-2">{% icon "shield-check" 16 %} Evidence coverage (last 12 months)</p>
+    {% for label, value in m.coverage.items %}<div class="derived-row"><span>{{ label }}</span><span>{{ value|percent }}</span></div>{% endfor %}
+    <p class="tiny faint mt-1">Denominator: gross value of active records = {{ m.coverage_basis|etb_plain }}.</p>
+    <div class="derived-row mt-1"><span>Missing-document rate<br><small class="faint">Share of non-verified records ≥ ETB 10,000 with no linked document ({{ m.large_records }} records)</small></span><strong>{{ m.missing_document_rate|percent }}</strong></div>
+  </section>
+  <section class="card">
+    <p class="card-title mb-2">{% icon "alert" 16 %} Open discrepancies and indicators</p>
+    {% for f in m.findings %}<div class="derived-row"><span>{{ f.code }}</span><span>{{ f.n }}</span></div>{% empty %}<p class="small muted">None open.</p>{% endfor %}
+  </section>
+</div>
+
+<div class="grid-2 mt-2">
+  <section class="card">
+    <p class="card-title mb-2">{% icon "history" 16 %} Analyst review (manual entries)</p>
+    {% for key, v in m.manual.items %}<div class="derived-row"><span>{{ key }}</span><span>avg {{ v.average }} <small class="faint">({{ v.entries }})</small></span></div>{% empty %}<p class="small muted">No measurements entered yet.</p>{% endfor %}
+    {% if m.review_change is not None %}<p class="small mt-1">Review time vs baseline: <strong>{{ m.review_change }}%</strong> <span class="faint">(from entered figures only)</span></p>{% endif %}
+  </section>
+  <section class="card">
+    <p class="card-title mb-2">{% icon "message" 16 %} Feedback (manual entries)</p>
+    {% for role, v in m.feedback.items %}<div class="derived-row"><span>{{ role|capfirst }}</span><span>{{ v.average }} / 5 <small class="faint">({{ v.responses }})</small></span></div>{% empty %}<p class="small muted">No feedback recorded yet.</p>{% endfor %}
+  </section>
+</div>
+
+<div class="grid-3 mt-2">
+  <form method="post" class="form card">{% csrf_token %}<input type="hidden" name="action" value="program">
+    <p class="card-title mb-2">{% icon "gauge" 16 %} Pilot configuration</p>
+    {% include "_form_errors.html" with form=program_form %}
+    {% include "_field.html" with field=program_form.name %}{% include "_field.html" with field=program_form.institution %}
+    <div class="field-row">{% include "_field.html" with field=program_form.start_date %}{% include "_field.html" with field=program_form.end_date %}</div>
+    {% include "_field.html" with field=program_form.target_merchants %}{% include "_field.html" with field=program_form.evaluation_design %}{% include "_field.html" with field=program_form.is_active %}
+    <button class="btn btn-primary btn-sm" type="submit">Save</button></form>
+  {% if pilot %}
+  <form method="post" class="form card">{% csrf_token %}<input type="hidden" name="action" value="metric">
+    <p class="card-title mb-2">{% icon "plus" 16 %} Record a measurement</p>
+    {% include "_form_errors.html" with form=metric_form %}
+    {% include "_field.html" with field=metric_form.metric %}{% include "_field.html" with field=metric_form.value %}
+    <div class="field-row">{% include "_field.html" with field=metric_form.period_start %}{% include "_field.html" with field=metric_form.period_end %}</div>
+    {% include "_field.html" with field=metric_form.source %}{% include "_field.html" with field=metric_form.notes %}
+    <button class="btn btn-secondary btn-sm" type="submit">Record</button></form>
+  <form method="post" class="form card">{% csrf_token %}<input type="hidden" name="action" value="feedback">
+    <p class="card-title mb-2">{% icon "message" 16 %} Record feedback</p>
+    {% include "_field.html" with field=feedback_form.role %}{% include "_field.html" with field=feedback_form.rating %}{% include "_field.html" with field=feedback_form.comment %}{% include "_field.html" with field=feedback_form.collected_on %}
+    <button class="btn btn-secondary btn-sm" type="submit">Record</button></form>
+  {% else %}<div class="card empty"><strong>Configure the pilot first</strong><p>Measurements and feedback are recorded against the active pilot.</p></div>{% endif %}
+</div>
+
+{% if entries %}
+<section class="card card-flush mt-2"><div class="card-head"><p class="card-title">Recorded measurements</p></div><div class="table-wrap"><table class="table">
+  <thead><tr><th>Metric</th><th class="num">Value</th><th>Period</th><th>Source</th><th>Entered</th></tr></thead>
+  <tbody>{% for e in entries %}<tr><td class="small">{{ e.get_metric_display }}{% if e.notes %}<small>{{ e.notes }}</small>{% endif %}</td><td class="num">{{ e.value }}</td><td class="small nowrap">{{ e.period_start }} – {{ e.period_end }}</td><td class="small">{{ e.source }}</td><td class="small">{{ e.entered_by.email }}</td></tr>{% endfor %}</tbody>
+</table></div></section>
+{% endif %}
+{% if feedback %}
+<section class="card card-flush mt-2"><div class="card-head"><p class="card-title">Feedback</p></div><div class="table-wrap"><table class="table">
+  <tbody>{% for f in feedback %}<tr><td class="small">{{ f.get_role_display }}</td><td class="num">{{ f.rating }}/5</td><td class="small">{{ f.comment }}</td><td class="small nowrap">{{ f.collected_on }}</td></tr>{% endfor %}</tbody>
+</table></div></section>
+{% endif %}
+{% endblock %}

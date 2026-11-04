@@ -1,0 +1,46 @@
+{% extends "app.html" %}
+{% load ui %}
+{% block title %}{{ consent.reference }} · Sharing{% endblock %}
+
+{% block content %}
+{% with st=consent.status %}
+<header class="page-header">
+  <a class="back" href="{% url 'sharing' %}">{% icon "arrow-left" 14 %} Sharing &amp; access</a>
+  <div class="row-between">
+    <div><h1>{{ consent.institution.name }}</h1><p>Consent reference <code>{{ consent.reference }}</code></p></div>
+    {% if st == "active" %}<span class="chip chip-ok">Active</span>{% elif st == "revoked" %}<span class="chip chip-danger">Revoked</span>{% else %}<span class="chip">Expired</span>{% endif %}
+  </div>
+</header>
+<div class="grid-2">
+  <section class="card">
+    <p class="card-title mb-2">{% icon "shield-check" 16 %} Scope</p>
+    <dl class="facts">
+      <dt>Purpose</dt><dd>{{ consent.get_purpose_display }}{% if consent.purpose_detail %} — {{ consent.purpose_detail }}{% endif %}</dd>
+      <dt>Reporting period</dt><dd>{{ consent.period_start|date:"F Y" }} – {{ consent.period_end|date:"F Y" }}</dd>
+      <dt>Data</dt><dd>{{ consent.category_labels|join:"; " }}</dd>
+      <dt>Granted</dt><dd>{{ consent.granted_at|date:"j M Y H:i" }} by {{ consent.granted_by.display_name }}</dd>
+      <dt>Expires</dt><dd>{{ consent.expires_at|date:"j M Y H:i" }}</dd>
+      {% if consent.revoked_at %}<dt>Revoked</dt><dd>{{ consent.revoked_at|date:"j M Y H:i" }} by {{ consent.revoked_by.display_name }}{% if consent.revocation_reason %} — “{{ consent.revocation_reason }}”{% endif %}</dd>{% endif %}
+    </dl>
+  </section>
+  {% if st == "active" and can_share %}
+  <form method="post" action="{% url 'consent_revoke' consent.public_id %}" class="form card">
+    {% csrf_token %}
+    <p class="card-title mb-2">{% icon "ban" 16 %} Revoke access</p>
+    <p class="small muted mb-2">From the moment you revoke, every request from {{ consent.institution.name }} — portal, PDF or API — is refused. Copies already downloaded can't be recalled.</p>
+    {% include "_field.html" with field=revoke_form.reason %}
+    {% include "_field.html" with field=revoke_form.understood %}
+    <button class="btn btn-danger" type="submit">Revoke now</button>
+  </form>
+  {% endif %}
+</div>
+<section class="card card-flush mt-2">
+  <div class="card-head"><p class="card-title">{% icon "eye" 16 %} Access under this consent</p></div>
+  {% if receipts %}
+  <div class="table-wrap"><table class="table"><thead><tr><th>When</th><th>Requester</th><th>What</th><th>Report</th><th>Receipt</th></tr></thead><tbody>
+  {% for r in receipts %}<tr><td class="small nowrap">{{ r.created_at|date:"j M Y H:i" }}</td><td class="small">{{ r.requester_label }}</td><td class="small">{{ r.get_channel_display }} · {{ r.resource }}</td><td class="small">{% if r.snapshot %}v{{ r.snapshot.version }}{% endif %}</td><td class="small mono">{{ r.reference }}</td></tr>{% endfor %}
+  </tbody></table></div>
+  {% else %}<div class="empty"><strong>Not accessed yet</strong></div>{% endif %}
+</section>
+{% endwith %}
+{% endblock %}

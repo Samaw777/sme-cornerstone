@@ -1,0 +1,27 @@
+{% extends "app.html" %}
+{% load ui %}
+{% block title %}Evidence terms · SME Cornerstone{% endblock %}
+{% block content %}
+<header class="page-header"><p class="eyebrow">Explained</p><h1>Evidence and financial terms</h1>
+  <p>The same labels appear everywhere: in the app, the passport, the PDF and the partner API.</p></header>
+<div class="grid-2">
+  <section class="card stack-sm"><p>{% evidence_badge "system_verified" %}</p><p>Imported from an authorised external source (for example a connected bank account), with the source's own identifier and the original event preserved. Demo connectors are always labelled <span class="badge badge-demo">Demo</span> and are not real verification.</p></section>
+  <section class="card stack-sm"><p>{% evidence_badge "evidence_supported" %}</p><p>Entered or imported by the business and backed by a linked receipt, invoice or statement. Each document shows its validation status: file checks only, reviewed by platform staff, or rejected. Rejected documents don't count.</p></section>
+  <section class="card stack-sm"><p>{% evidence_badge "self_reported" %}</p><p>Entered or imported by the business without independent verification. CSV uploads are self-reported. Useful context, never presented as verified.</p></section>
+  <section class="card stack-sm"><p>{% evidence_badge "derived" %}</p><p>Calculated by the platform from identified records using a documented method (trend, variability, totals). Derived metrics are never counted as extra evidence.</p></section>
+</div>
+<section class="card mt-2">
+  <dl class="facts">
+    <dt>Revenue</dt><dd>Money in from sales, services and other operating income. Loans and owner capital are not revenue.</dd>
+    <dt>Operating expenses</dt><dd>Money out for running the business. Loan repayments, owner drawings and equipment purchases are not operating expenses.</dd>
+    <dt>Net cash movement</dt><dd>All money in minus all money out for a month. It is not profit.</dd>
+    <dt>Accounting profit</dt><dd>Not calculated. It would need accruals, depreciation, inventory changes and tax, which this platform doesn't record.</dd>
+    <dt>Unknown</dt><dd>A month with no records is shown as unknown, never as zero.</dd>
+    <dt>Evidence coverage</dt><dd>Share of the gross value of counted records (money in + money out) in each evidence class. The denominator is always stated.</dd>
+    <dt>Data-quality indicator</dt><dd>A neutral prompt to check something (a gap, an unusual change, a possible duplicate). It is not a finding of error, fraud or creditworthiness.</dd>
+    <dt>Correction</dt><dd>An amendment or reversal with an author, time and reason. The original record is always kept.</dd>
+    <dt>Consent</dt><dd>Your explicit, time-limited, revocable permission for one institution to see named data for a named period and purpose.</dd>
+  </dl>
+  <p class="disclaimer mt-2">The Business Financial Passport provides financial evidence and is not a credit decision.</p>
+</section>
+{% endblock %}

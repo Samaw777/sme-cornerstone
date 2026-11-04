@@ -1,0 +1,56 @@
+{% extends "app.html" %}
+{% load ui %}
+{% block title %}Sharing & access · {{ request.business.name }}{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <div class="row-between">
+    <div><p class="eyebrow">Passport</p><h1>Sharing &amp; access</h1>
+      <p>Banks and MFIs see nothing unless you authorise them — for a named purpose, data, period and expiry. Every access is recorded below.</p></div>
+    {% if can_share %}<a class="btn btn-primary" href="{% url 'consent_new' %}">{% icon "plus" 16 %} Authorise an institution</a>{% endif %}
+  </div>
+</header>
+
+<section class="card card-flush">
+  <div class="card-head"><p class="card-title">{% icon "shield-check" 16 %} Authorisations</p></div>
+  {% if consents %}
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>Institution</th><th>Purpose</th><th>Period</th><th>Status</th></tr></thead>
+    <tbody>{% for c in consents %}{% with st=c.status %}
+      <tr class="{% if st != 'active' %}row-muted{% endif %}"><td class="primary"><a href="{% url 'consent_detail' c.public_id %}">{{ c.institution.name }}</a><small>{{ c.reference }}{% if c.institution.is_demo %} · demo institution{% endif %}</small></td>
+        <td class="small">{{ c.get_purpose_display }}</td><td class="small nowrap">{{ c.period_start|date:"M Y" }} – {{ c.period_end|date:"M Y" }}</td>
+        <td>{% if st == "active" %}<span class="chip chip-ok">Active until {{ c.expires_at|date:"j M Y" }}</span>{% elif st == "revoked" %}<span class="chip chip-danger">Revoked {{ c.revoked_at|date:"j M Y" }}</span>{% else %}<span class="chip">Expired {{ c.expires_at|date:"j M Y" }}</span>{% endif %}</td></tr>
+    {% endwith %}{% endfor %}</tbody>
+  </table></div>
+  {% else %}<div class="empty"><span class="empty-icon">{% icon "lock" 20 %}</span><strong>Nothing is shared</strong><p>No bank or MFI can see any of your data. When you're applying for financing, you can authorise one here.</p></div>{% endif %}
+</section>
+
+<section class="card card-flush mt-2">
+  <div class="card-head"><div><p class="card-title">{% icon "eye" 16 %} Access receipts</p><p class="card-sub">Every time an authorised institution viewed, downloaded or called the API.</p></div></div>
+  {% if receipts.object_list %}
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>When</th><th>Institution and requester</th><th>What</th><th>Report</th><th>Receipt</th></tr></thead>
+    <tbody>{% for r in receipts %}
+      <tr><td class="small nowrap">{{ r.created_at|date:"j M Y H:i" }}</td><td>{{ r.institution.name }}<small>{{ r.requester_label }}</small></td>
+        <td class="small">{{ r.get_channel_display }} · {{ r.resource }}<small>{{ r.category_labels|join:", " }}</small><small>{{ r.period_start|date:"M Y" }} – {{ r.period_end|date:"M Y" }}</small></td>
+        <td class="small">{% if r.snapshot %}v{{ r.snapshot.version }}{% endif %}<small>method {{ r.calculation_version }}</small></td>
+        <td class="small mono">{{ r.reference }}<small>{{ r.consent.reference }}</small></td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+  {% if receipts.has_other_pages %}<div class="pagination" style="padding-bottom:1rem">{% if receipts.has_previous %}<a class="btn btn-ghost btn-sm" href="?page={{ receipts.previous_page_number }}">Previous</a>{% endif %}<span>Page {{ receipts.number }} of {{ receipts.paginator.num_pages }}</span>{% if receipts.has_next %}<a class="btn btn-ghost btn-sm" href="?page={{ receipts.next_page_number }}">Next</a>{% endif %}</div>{% endif %}
+  {% else %}<div class="empty"><strong>No access yet</strong><p>Receipts appear here as soon as an authorised institution opens your passport.</p></div>{% endif %}
+</section>
+
+<div class="grid-2 mt-2">
+  <section class="card">
+    <p class="card-title mb-2">{% icon "ban" 16 %} Blocked attempts</p>
+    {% for e in denied %}<div class="derived-row"><span class="small">{{ e.institution.name|default:"Unknown institution" }}<br><small class="faint">{{ e.detail.reason }} · {{ e.detail.resource }}</small></span><span class="small faint nowrap">{{ e.created_at|date:"j M Y H:i" }}</span></div>
+    {% empty %}<p class="small muted">None. Requests without a valid authorisation are blocked and listed here.</p>{% endfor %}
+  </section>
+  <section class="card">
+    <p class="card-title mb-2">{% icon "key" 16 %} Platform support access</p>
+    {% for s in support %}<div class="derived-row"><span class="small">{{ s.admin.display_name }}<br><small class="faint">“{{ s.reason }}”</small></span><span class="small faint nowrap">{{ s.started_at|date:"j M Y H:i" }}</span></div>
+    {% empty %}<p class="small muted">Platform staff haven't opened your records. If they ever need to (for a support request), it's time-limited and listed here.</p>{% endfor %}
+  </section>
+</div>
+{% endblock %}

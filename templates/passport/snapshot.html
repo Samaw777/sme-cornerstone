@@ -1,0 +1,18 @@
+{% extends "app.html" %}
+{% load ui %}
+{% block title %}Passport v{{ snapshot.version }} · {{ request.business.name }}{% endblock %}
+
+{% block content %}
+<header class="page-header no-print">
+  <a class="back" href="{% url 'passport' %}">{% icon "arrow-left" 14 %} Passport</a>
+  <div class="row-between">
+    <div><h1>Passport v{{ snapshot.version }}</h1><p>Frozen on {{ snapshot.generated_at|date:"j M Y H:i" }}. Later changes to your records appear in new versions, not this one.</p></div>
+    <div class="row"><a class="btn btn-primary" href="{% url 'passport_pdf' snapshot.public_id %}">{% icon "download" 16 %} Download PDF</a><button class="btn btn-ghost" type="button" onclick="window.print()">Print</button></div>
+  </div>
+</header>
+{% include "passport/_report.html" %}
+{% if receipts %}
+<section class="card card-flush mt-2"><div class="card-head"><p class="card-title">{% icon "eye" 16 %} Accessed by</p></div>
+  <div class="table-wrap"><table class="table"><tbody>{% for r in receipts %}<tr><td>{{ r.institution.name }}<small>{{ r.requester_label }}</small></td><td class="small">{{ r.get_channel_display }}</td><td class="small nowrap">{{ r.created_at|date:"j M Y H:i" }}</td></tr>{% endfor %}</tbody></table></div></section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends "auth.html" %}
+{% load ui %}
+
+{% block title %}Create account · SME Cornerstone{% endblock %}
+
+{% block content %}
+<h1>Set up your <em>business</em></h1>
+<p class="lede">Create your owner account first. You'll add business details next.</p>
+
+<form method="post" class="form">
+  {% csrf_token %}
+  {% include "_field.html" with field=form.name %}
+  {% include "_field.html" with field=form.email %}
+  <div class="field-row">
+    {% include "_field.html" with field=form.password1 %}
+    {% include "_field.html" with field=form.password2 %}
+  </div>
+  <p class="help mb-2">At least 10 characters, not only numbers.</p>
+  <button type="submit" class="btn btn-primary btn-lg">Create account {% icon "arrow-right" 18 %}</button>
+</form>
+
+<p class="auth-switch">Already have an account? <a href="{% url 'login' %}">Sign in</a></p>
+<p class="auth-trust">{% icon "lock" 14 %} Staff are added by the business owner. Bank analysts are set up by the platform.</p>
+{% endblock %}

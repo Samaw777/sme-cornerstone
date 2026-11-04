@@ -1,0 +1,33 @@
+{% extends "app.html" %}
+{% load ui %}
+{% block title %}Business profile · {{ business.name }}{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <p class="eyebrow">Business</p>
+  <h1>Profile</h1>
+  <p>Shown in the passport's profile section. Changing a validated value returns it to merchant-provided.</p>
+</header>
+<div class="grid-2">
+  <form method="post" class="form card">
+    {% csrf_token %}
+    {% include "_form_errors.html" %}
+    {% include "_field.html" with field=form.name %}
+    {% include "_field.html" with field=form.legal_name %}
+    <div class="field-row">{% include "_field.html" with field=form.sector %}{% include "_field.html" with field=form.operating_start_date %}</div>
+    <div class="field-row">{% include "_field.html" with field=form.region %}{% include "_field.html" with field=form.city %}</div>
+    <div class="field-row">{% include "_field.html" with field=form.sub_city %}{% include "_field.html" with field=form.phone %}</div>
+    <div class="field-row">{% include "_field.html" with field=form.tin %}{% include "_field.html" with field=form.trade_license_number %}</div>
+    <button class="btn btn-primary" type="submit">Save</button>
+  </form>
+  <section class="card">
+    <p class="card-title mb-2">{% icon "shield-check" 16 %} Identity information status</p>
+    <dl class="facts">
+      <dt>TIN</dt><dd>{{ business.tin|default:"—" }} <span class="badge {% if business.tin_status == 'platform_validated' %}ev-verified{% else %}badge-muted{% endif %}">{{ business.get_tin_status_display }}</span></dd>
+      <dt>Trade licence</dt><dd>{{ business.trade_license_number|default:"—" }} <span class="badge {% if business.trade_license_status == 'platform_validated' %}ev-verified{% else %}badge-muted{% endif %}">{{ business.get_trade_license_status_display }}</span></dd>
+      {% if business.identity_validated_at %}<dt>Last validated</dt><dd>{{ business.identity_validated_at|date:"j M Y" }} — {{ business.identity_validation_note }}</dd>{% endif %}
+    </dl>
+    <p class="small muted mt-2">Validation happens when platform staff check a value against a document. It confirms the value matches the document, not the business's creditworthiness. Banks and MFIs remain responsible for their own KYC.</p>
+  </section>
+</div>
+{% endblock %}

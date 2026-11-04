@@ -1,0 +1,126 @@
+{% extends "app.html" %}
+{% load ui %}
+{% block title %}Record · {{ request.business.name }}{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <a class="back" href="{% url 'transactions' %}">{% icon "arrow-left" 14 %} Transactions</a>
+  <div class="row-between">
+    <div>
+      <h1>{% if txn.direction == "out" %}−{% endif %}{{ txn.amount|etb }}</h1>
+      <p>{{ txn.get_direction_display }} · {{ txn.get_category_display }} · {{ txn.occurred_on|date:"j F Y" }}</p>
+    </div>
+    <div class="row">{% evidence_badge txn.evidence_class txn.is_demo %}<span class="chip {% if txn.status == 'active' %}chip-ok{% else %}chip-warn{% endif %}">{{ txn.get_status_display }}</span></div>
+  </div>
+</header>
+
+{% if txn.status != "active" %}
+<div class="notice notice-warn mb-2">{% icon "history" 16 %}<span>This is a corrected original. It's kept for the audit trail and <strong>not counted</strong> in any total.{% for c in corrections %}{% if c.replacement %} <a class="link" href="{% url 'transaction_detail' c.replacement.public_id %}">See the current version</a>.{% endif %}{% endfor %}</span></div>
+{% endif %}
+
+<div class="grid-2">
+  <section class="card">
+    <p class="card-title mb-2">{% icon "file-text" 16 %} Details</p>
+    <dl class="facts">
+      <dt>Customer / supplier</dt><dd>{{ txn.counterparty|default:"—" }}</dd>
+      <dt>Description</dt><dd>{{ txn.description|default:"—" }}</dd>
+      <dt>Reference</dt><dd>{{ txn.reference|default:"—" }}</dd>
+      <dt>Currency</dt><dd>{{ txn.currency }}</dd>
+      <dt>Source</dt><dd>{{ txn.get_source_kind_display }}{% if txn.connected_source %} — {{ txn.connected_source }}{% endif %}{% if txn.import_batch %} — <a class="link" href="{% url 'import_preview' txn.import_batch.pk %}">{{ txn.import_batch.filename }}</a>{% endif %}</dd>
+      <dt>Recorded</dt><dd>{{ txn.created_at|date:"j M Y H:i" }}{% if txn.created_by %} by {{ txn.created_by.display_name }}{% endif %}</dd>
+    </dl>
+    {% if txn.source_event %}
+    <details class="disclosure mt-2">
+      <summary>Original source event</summary>
+      <div class="disclosure-body">
+        <p class="small muted mb-1">Preserved exactly as received {{ txn.source_event.received_at|date:"j M Y H:i" }}. SHA-256 <code>{{ txn.source_event.payload_sha256|slice:":16" }}…</code>{% if txn.source_event.external_id %} · source id <code>{{ txn.source_event.external_id }}</code>{% endif %}</p>
+        <pre class="token-box small mono" style="white-space:pre-wrap">{{ txn.source_event.payload|pprint }}</pre>
+      </div>
+    </details>
+    {% endif %}
+  </section>
+
+  <section class="card">
+    <p class="card-title mb-2">{% icon "paperclip" 16 %} Evidence</p>
+    {% for link in links %}
+      <div class="derived-row"><span><a class="link" href="{% url 'document_download' link.document.public_id %}?view=1" target="_blank" rel="noopener">{{ link.document.title }}</a><br><small class="faint">{{ link.document.get_kind_display }} · {{ link.document.get_validation_status_display }}</small></span>
+        {% if can_link %}<form method="post" action="{% url 'link_remove' link.pk %}" data-confirm="Unlink this document?">{% csrf_token %}<button class="btn btn-ghost btn-sm" type="submit">Unlink</button></form>{% endif %}</div>
+    {% empty %}
+      <p class="muted small">No documents linked{% if txn.is_system_sourced %} — this record is system-sourced.{% else %}. Linking a receipt or invoice makes this record evidence-supported.{% endif %}</p>
+    {% endfor %}
+    {% if can_link %}
+    <form method="post" action="{% url 'transaction_link' txn.public_id %}" enctype="multipart/form-data" class="form mt-2">
+      {% csrf_token %}
+      {% if documents %}
+      <div class="field"><label class="label" for="link-doc">Link an uploaded document</label>
+        <select id="link-doc" name="document"><option value="">Choose…</option>{% for d in documents %}<option value="{{ d.public_id }}">{{ d.title }} ({{ d.get_kind_display }})</option>{% endfor %}</select></div>
+      <p class="help mb-1">or upload a new one:</p>
+      {% endif %}
+      <div class="field-row">{% include "_field.html" with field=doc_form.file %}{% include "_field.html" with field=doc_form.kind %}</div>
+      <button class="btn btn-secondary btn-sm" type="submit">{% icon "paperclip" 14 %} Link evidence</button>
+    </form>
+    {% endif %}
+  </section>
+</div>
+
+<section class="card mt-2">
+  <p class="card-title mb-2">{% icon "history" 16 %} History and corrections</p>
+  <ol class="lineage">
+    {% for version in lineage %}
+      <li class="{% if version == txn %}current{% endif %}">
+        <strong>{% if version.direction == "out" %}−{% endif %}{{ version.amount|etb_plain }}</strong> · {{ version.get_category_display }} · {{ version.occurred_on|date:"j M Y" }}
+        <span class="chip">{{ version.get_status_display }}</span>
+        {% if version != txn %}<a class="link small" href="{% url 'transaction_detail' version.public_id %}">open</a>{% endif %}
+        {% for c in version.corrections.all %}<p class="small muted mt-1">{{ c.get_kind_display }} by {{ c.author.display_name }} on {{ c.created_at|date:"j M Y H:i" }} — “{{ c.reason }}”</p>{% endfor %}
+      </li>
+    {% endfor %}
+  </ol>
+
+  {% if can_correct %}
+  <div class="grid-2 mt-2">
+    <details class="disclosure">
+      <summary>Amend this record</summary>
+      <form method="post" action="{% url 'transaction_amend' txn.public_id %}" class="form disclosure-body">
+        {% csrf_token %}
+        <p class="help mb-1">Creates a corrected version. The original stays, marked superseded.</p>
+        <div class="field-row">{% include "_field.html" with field=amend_form.direction %}{% include "_field.html" with field=amend_form.occurred_on %}</div>
+        <div class="field-row">{% include "_field.html" with field=amend_form.amount %}{% include "_field.html" with field=amend_form.category %}</div>
+        {% include "_field.html" with field=amend_form.counterparty %}
+        {% include "_field.html" with field=amend_form.description %}
+        {% include "_field.html" with field=amend_form.reference %}
+        {% include "_field.html" with field=amend_form.reason %}
+        <button class="btn btn-primary btn-sm" type="submit">Save correction</button>
+      </form>
+    </details>
+    <details class="disclosure">
+      <summary>Reverse this record</summary>
+      <form method="post" action="{% url 'transaction_reverse' txn.public_id %}" class="form disclosure-body" data-confirm="Reverse this record? It stays in the history but stops counting.">
+        {% csrf_token %}
+        <p class="help mb-1">Use when the record shouldn't exist at all (e.g. entered twice). It stays visible but stops counting.</p>
+        {% include "_field.html" with field=reverse_form.reason %}
+        <button class="btn btn-danger btn-sm" type="submit">Reverse</button>
+      </form>
+    </details>
+  </div>
+  {% elif txn.is_system_sourced and txn.status == "active" %}
+  <p class="small muted mt-2">{% icon "lock" 13 %} Records from a connected source can't be amended or reversed — the original event is preserved as received. Add a note or open a dispute below.</p>
+  {% endif %}
+</section>
+
+<section class="card mt-2">
+  <p class="card-title mb-2">{% icon "message" 16 %} Notes and disputes</p>
+  {% for a in annotations %}
+    <div class="finding"><strong>{{ a.get_kind_display }}</strong>{% if a.kind == "dispute" %} <span class="chip {% if a.is_open %}chip-warn{% endif %}">{% if a.is_open %}Open{% else %}Resolved{% endif %}</span>{% endif %}
+      <p>{{ a.text }}</p><p class="tiny faint">{{ a.author.display_name }} · {{ a.created_at|date:"j M Y H:i" }}</p>
+      {% if a.kind == "dispute" and a.is_open %}<form method="post" action="{% url 'annotation_resolve' a.pk %}">{% csrf_token %}<button class="btn btn-ghost btn-sm mt-1" type="submit">Mark resolved</button></form>{% endif %}
+    </div>
+  {% empty %}<p class="muted small">No notes yet.</p>{% endfor %}
+  <form method="post" action="{% url 'transaction_annotate' txn.public_id %}" class="form mt-2">
+    {% csrf_token %}
+    <div class="segmented mb-1" role="radiogroup">{% for choice in note_form.kind %}<label>{{ choice.tag }}<span>{{ choice.choice_label }}</span></label>{% endfor %}</div>
+    {% include "_field.html" with field=note_form.text %}
+    <p class="help mb-1">A dispute flags the record in your passport's data-quality section; the original record is unchanged.</p>
+    <button class="btn btn-secondary btn-sm" type="submit">Add</button>
+  </form>
+</section>
+{% endblock %}

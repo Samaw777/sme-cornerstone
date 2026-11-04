@@ -1,0 +1,16 @@
+{% extends "app.html" %}
+{% load ui %}
+{% block title %}Operational issues · Console{% endblock %}
+{% block content %}
+<header class="page-header"><p class="eyebrow">Platform console</p><h1>Operational issues</h1></header>
+<div class="grid-2">
+<section class="card card-flush"><div class="table-wrap"><table class="table"><tbody>
+  {% for i in issues %}<tr class="{% if i.status == 'resolved' %}row-muted{% endif %}"><td class="primary">{{ i.title }}<small>{{ i.description|truncatechars:120 }}</small><small>{{ i.business.name|default:"" }} {{ i.institution.name|default:"" }} · {{ i.created_at|date:"j M Y" }}</small></td>
+    <td>{% if i.status == "open" %}<form method="post" action="{% url 'console_issue_resolve' i.pk %}">{% csrf_token %}<button class="btn btn-ghost btn-sm" type="submit">Resolve</button></form>{% else %}<span class="chip chip-ok">Resolved</span>{% endif %}</td></tr>
+  {% empty %}<tr><td><div class="empty"><strong>No issues logged</strong></div></td></tr>{% endfor %}
+</tbody></table></div></section>
+<form method="post" class="form card">{% csrf_token %}<p class="card-title mb-2">{% icon "plus" 16 %} Log an issue</p>
+  {% include "_field.html" with field=form.title %}{% include "_field.html" with field=form.description %}<div class="field-row">{% include "_field.html" with field=form.business %}{% include "_field.html" with field=form.institution %}</div>
+  <button class="btn btn-primary" type="submit">Log</button></form>
+</div>
+{% endblock %}

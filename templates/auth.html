@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% load ui %}
+
+{% block body %}
+<div class="auth">
+  <aside class="auth-art">
+    <div class="brand">{% include "_logo.html" %}<span>SME Cornerstone</span></div>
+    <div class="auth-art-copy">
+      <h2>Keep your records. <em>Own</em> your financial story.</h2>
+      <p>Record sales and expenses, attach receipts, and build a Business Financial Passport you choose when to share with a bank or MFI.</p>
+    </div>
+    <ul class="auth-points">
+      <li>{% icon "shield-check" 16 %}<span>Nothing is shared without your explicit, revocable consent.</span></li>
+      <li>{% icon "circle-check" 16 %}<span>Verified, evidence-supported and self-reported figures are always kept apart.</span></li>
+      <li>{% icon "info" 16 %}<span>The passport is financial evidence, not a credit decision.</span></li>
+    </ul>
+    <svg class="stones" viewBox="0 0 400 260" aria-hidden="true">
+      <rect x="120" y="20" width="170" height="70" rx="10" fill="#eef2f7" fill-opacity=".06" stroke="#eef2f7" stroke-opacity=".12" />
+      <rect x="40" y="100" width="150" height="70" rx="10" fill="#eef2f7" fill-opacity=".05" stroke="#eef2f7" stroke-opacity=".1" />
+      <rect x="200" y="100" width="170" height="70" rx="10" fill="#eef2f7" fill-opacity=".05" stroke="#eef2f7" stroke-opacity=".1" />
+      <rect x="0" y="180" width="140" height="70" rx="10" fill="#e6b85c" fill-opacity=".85" />
+      <rect x="150" y="180" width="170" height="70" rx="10" fill="#eef2f7" fill-opacity=".05" stroke="#eef2f7" stroke-opacity=".1" />
+    </svg>
+  </aside>
+  <section class="auth-main">
+    <div class="auth-card">
+      <div class="brand">{% include "_logo.html" %}<span>SME Cornerstone</span></div>
+      {% block content %}{% endblock %}
+    </div>
+  </section>
+</div>
+{% endblock %}

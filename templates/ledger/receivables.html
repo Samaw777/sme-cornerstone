@@ -1,0 +1,80 @@
+{% extends "app.html" %}
+{% load ui %}
+{% block title %}Receivables & obligations · {{ request.business.name }}{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <p class="eyebrow">Records</p><h1>Receivables &amp; obligations</h1>
+  <p>Track invoices customers owe you and the regular payments you've committed to. Only what you record here is included — the platform doesn't discover debts held elsewhere.</p>
+</header>
+
+<section class="stats" style="grid-template-columns: repeat(3, 1fr)">
+  <div class="card"><p class="stat-label">Outstanding invoices</p><p class="stat-value">{{ outstanding|etb }}</p></div>
+  <div class="card"><p class="stat-label">Of which overdue</p><p class="stat-value {% if overdue %}neg{% endif %}">{{ overdue|etb }}</p></div>
+  <div class="card"><p class="stat-label">Recorded obligations / month</p><p class="stat-value">{{ monthly_obligations|etb }}</p></div>
+</section>
+
+<section class="card card-flush mt-2">
+  <div class="card-head"><p class="card-title">{% icon "receipt" 16 %} Invoices</p></div>
+  {% if invoices %}
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>Invoice</th><th>Due</th><th class="num">Amount</th><th class="num">Outstanding</th><th>Status</th>{% if can_edit %}<th></th>{% endif %}</tr></thead>
+    <tbody>{% for i in invoices %}
+      <tr class="{% if i.status != 'open' %}row-muted{% endif %}">
+        <td class="primary">{{ i.number }}<small>{{ i.customer }} · issued {{ i.issue_date|date:"j M Y" }}{% if i.is_demo %} · demo{% endif %}</small></td>
+        <td class="nowrap {% if i.status == 'open' and i.due_date < today %}neg{% endif %}">{{ i.due_date|date:"j M Y" }}</td>
+        <td class="num">{{ i.amount|etb }}</td><td class="num">{{ i.outstanding|etb }}</td>
+        <td><span class="chip {% if i.status == 'paid' %}chip-ok{% elif i.status == 'open' and i.due_date < today %}chip-warn{% endif %}">{% if i.status == 'open' and i.due_date < today %}Overdue{% else %}{{ i.get_status_display }}{% endif %}</span></td>
+        {% if can_edit %}<td>{% if i.status == "open" %}
+          <details class="disclosure"><summary>Payment</summary><form method="post" action="{% url 'invoice_payment' i.public_id %}" class="form disclosure-body">{% csrf_token %}
+            {% include "_field.html" with field=payment_form.amount %}{% include "_field.html" with field=payment_form.paid_on %}
+            <button class="btn btn-secondary btn-sm" type="submit">Record payment</button></form>
+            <form method="post" action="{% url 'invoice_void' i.public_id %}" class="disclosure-body" data-confirm="Void this invoice?">{% csrf_token %}<button class="btn btn-ghost btn-sm" type="submit">Void</button></form></details>
+        {% endif %}</td>{% endif %}
+      </tr>
+    {% endfor %}</tbody>
+  </table></div>
+  <p class="tiny faint" style="padding: 0 1.25rem 1rem">Recording a payment here doesn't create a transaction. Record the cash received in Transactions so revenue is counted exactly once.</p>
+  {% else %}<div class="empty"><span class="empty-icon">{% icon "receipt" 20 %}</span><strong>No invoices recorded</strong><p>Add invoices for customers who buy on credit so the passport can show recorded receivables.</p></div>{% endif %}
+</section>
+
+<section class="card card-flush mt-2">
+  <div class="card-head"><p class="card-title">{% icon "calendar" 16 %} Recurring obligations</p></div>
+  {% if obligations %}
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>Obligation</th><th>Type</th><th class="num">Amount</th><th class="num">Monthly equiv.</th><th>Period</th>{% if can_edit %}<th></th>{% endif %}</tr></thead>
+    <tbody>{% for o in obligations %}
+      <tr>
+        <td class="primary">{{ o.name }}<small>{{ o.counterparty }}</small></td><td class="small">{{ o.get_kind_display }}</td>
+        <td class="num">{{ o.amount|etb }}<small>{{ o.get_frequency_display }}</small></td><td class="num">{{ o.monthly_equivalent|etb }}</td>
+        <td class="small nowrap">{{ o.start_date|date:"M Y" }} – {% if o.end_date %}{{ o.end_date|date:"M Y" }}{% else %}ongoing{% endif %}</td>
+        {% if can_edit %}<td>{% if not o.end_date %}<form method="post" action="{% url 'obligation_end' o.pk %}" data-confirm="Mark this obligation as ended today?">{% csrf_token %}<button class="btn btn-ghost btn-sm" type="submit">Ended</button></form>{% endif %}</td>{% endif %}
+      </tr>
+    {% endfor %}</tbody>
+  </table></div>
+  {% else %}<div class="empty"><span class="empty-icon">{% icon "calendar" 20 %}</span><strong>No obligations recorded</strong><p>Rent, loan repayments, salaries — recording them helps a reader understand your regular commitments.</p></div>{% endif %}
+</section>
+
+{% if can_edit %}
+<div class="grid-2 mt-2">
+  <form method="post" class="form card">{% csrf_token %}
+    <p class="card-title mb-2">{% icon "plus" 16 %} Add invoice</p>
+    {% include "_form_errors.html" with form=invoice_form %}
+    <div class="field-row">{% include "_field.html" with field=invoice_form.number %}{% include "_field.html" with field=invoice_form.customer %}</div>
+    <div class="field-row">{% include "_field.html" with field=invoice_form.issue_date %}{% include "_field.html" with field=invoice_form.due_date %}</div>
+    {% include "_field.html" with field=invoice_form.amount %}{% include "_field.html" with field=invoice_form.notes %}
+    <button class="btn btn-primary" type="submit">Save invoice</button>
+  </form>
+  <form method="post" class="form card">{% csrf_token %}
+    <p class="card-title mb-2">{% icon "plus" 16 %} Add obligation</p>
+    {% include "_form_errors.html" with form=obligation_form %}
+    <div class="field-row">{% include "_field.html" with field=obligation_form.name %}{% include "_field.html" with field=obligation_form.kind %}</div>
+    <div class="field-row">{% include "_field.html" with field=obligation_form.counterparty %}{% include "_field.html" with field=obligation_form.frequency %}</div>
+    {% include "_field.html" with field=obligation_form.amount %}
+    <div class="field-row">{% include "_field.html" with field=obligation_form.start_date %}{% include "_field.html" with field=obligation_form.end_date %}</div>
+    {% include "_field.html" with field=obligation_form.notes %}
+    <button class="btn btn-primary" type="submit">Save obligation</button>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

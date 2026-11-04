@@ -1,0 +1,23 @@
+{% extends "app.html" %}
+{% load ui %}
+{% block title %}Authorise an institution · {{ request.business.name }}{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <a class="back" href="{% url 'sharing' %}">{% icon "arrow-left" 14 %} Sharing &amp; access</a>
+  <h1>Authorise an institution</h1>
+  <p>Choose exactly who can see what, for which period, and until when. You'll review everything before it takes effect.</p>
+</header>
+<form method="post" class="form card" style="max-width: 44rem">
+  {% csrf_token %}
+  {% include "_form_errors.html" %}
+  <p class="eyebrow mb-1">Step 1 of 2 · Scope</p>
+  <div class="field-row">{% include "_field.html" with field=form.institution %}{% include "_field.html" with field=form.purpose %}</div>
+  {% include "_field.html" with field=form.purpose_detail %}
+  {% include "_field.html" with field=form.categories help_map=category_help %}
+  <div class="field-row">{% include "_field.html" with field=form.period_from %}{% include "_field.html" with field=form.period_to %}</div>
+  {% include "_field.html" with field=form.expires_on %}
+  <div class="notice notice-info mb-2">{% icon "info" 16 %}<span>Institutions never get your individual transactions, documents or direct database access — only the summaries you tick, through audited views.</span></div>
+  <button class="btn btn-primary" type="submit">Review {% icon "arrow-right" 16 %}</button>
+</form>
+{% endblock %}

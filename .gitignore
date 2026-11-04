@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Django
+db.sqlite3
+staticfiles/
+
+# Secrets — copy .env.example to .env
+.env
+.env.*
+!.env.example
+
+# Misc
+.DS_Store

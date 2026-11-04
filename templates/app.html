@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% load ui i18n %}
+
+{% block body %}
+{% with path=request.resolver_match.url_name %}
+<div class="shell">
+  <aside class="sidebar">
+    <a href="{% url 'home' %}" class="brand">{% include "_logo.html" %}<span>SME Cornerstone<small>{% if workspace_kind == "bank" %}{{ analyst.institution.name }}{% elif workspace_kind == "console" %}Platform console{% else %}Merchant workspace{% endif %}</small></span></a>
+
+    {% if workspace_kind == "merchant" and all_memberships|length > 1 %}
+      <form method="post" class="switcher form" action="" data-no-loading onchange="this.action=this.querySelector('select').value; this.submit()">
+        {% csrf_token %}
+        <label class="sr-only" for="biz-switch">Business</label>
+        <select id="biz-switch" class="input">
+          {% for m in all_memberships %}<option value="{% url 'switch_business' m.business.public_id %}" {% if m.business == membership.business %}selected{% endif %}>{{ m.business.name }}</option>{% endfor %}
+        </select>
+      </form>
+    {% endif %}
+
+    <nav class="side-nav" aria-label="Main">
+      {% if workspace_kind == "bank" %}
+        <a href="{% url 'bank_home' %}" class="{% if path == 'bank_home' or path == 'bank_business' %}active{% endif %}"><span class="nav-icon">{% icon "landmark" 17 %}</span>{% translate "Authorised businesses" %}</a>
+        <a href="{% url 'bank_receipts' %}" class="{% if path == 'bank_receipts' %}active{% endif %}"><span class="nav-icon">{% icon "history" 17 %}</span>{% translate "Access receipts" %}</a>
+        <a href="{% url 'glossary' %}" class="{% if path == 'glossary' %}active{% endif %}"><span class="nav-icon">{% icon "info" 17 %}</span>{% translate "Evidence terms" %}</a>
+      {% elif workspace_kind == "console" %}
+        <a href="{% url 'console_home' %}" class="{% if path == 'console_home' %}active{% endif %}"><span class="nav-icon">{% icon "dashboard" 17 %}</span>Overview</a>
+        <a href="{% url 'console_businesses' %}" class="{% if path == 'console_businesses' or path == 'console_business' %}active{% endif %}"><span class="nav-icon">{% icon "building" 17 %}</span>Businesses</a>
+        <a href="{% url 'console_institutions' %}" class="{% if path == 'console_institutions' or path == 'console_institution' %}active{% endif %}"><span class="nav-icon">{% icon "landmark" 17 %}</span>Institutions</a>
+        <a href="{% url 'console_pilot' %}" class="{% if path == 'console_pilot' %}active{% endif %}"><span class="nav-icon">{% icon "gauge" 17 %}</span>Pilot measurement</a>
+        <a href="{% url 'console_issues' %}" class="{% if path == 'console_issues' %}active{% endif %}"><span class="nav-icon">{% icon "alert" 17 %}</span>Operational issues</a>
+        <a href="{% url 'console_audit' %}" class="{% if path == 'console_audit' %}active{% endif %}"><span class="nav-icon">{% icon "shield-check" 17 %}</span>Audit log</a>
+      {% else %}
+        <a href="{% url 'dashboard' %}" class="{% if path == 'dashboard' %}active{% endif %}"><span class="nav-icon">{% icon "dashboard" 17 %}</span>{% translate "Dashboard" %}</a>
+        <span class="nav-group">{% translate "Records" %}</span>
+        <a href="{% url 'transactions' %}" class="{% if path == 'transactions' or path == 'transaction_new' or path == 'transaction_detail' %}active{% endif %}"><span class="nav-icon">{% icon "transactions" 17 %}</span>{% translate "Transactions" %}</a>
+        <a href="{% url 'import_list' %}" class="{% if path|slice:':6' == 'import' %}active{% endif %}"><span class="nav-icon">{% icon "upload" 17 %}</span>{% translate "CSV import" %}</a>
+        <a href="{% url 'receivables' %}" class="{% if path == 'receivables' %}active{% endif %}"><span class="nav-icon">{% icon "receipt" 17 %}</span>{% translate "Receivables & obligations" %}</a>
+        <a href="{% url 'documents' %}" class="{% if path == 'documents' %}active{% endif %}"><span class="nav-icon">{% icon "paperclip" 17 %}</span>{% translate "Documents" %}</a>
+        <a href="{% url 'sources' %}" class="{% if path == 'sources' %}active{% endif %}"><span class="nav-icon">{% icon "plug" 17 %}</span>{% translate "Connected sources" %}</a>
+        <a href="{% url 'findings' %}" class="{% if path == 'findings' %}active{% endif %}"><span class="nav-icon">{% icon "alert" 17 %}</span>{% translate "Data quality" %}</a>
+        <span class="nav-group">{% translate "Passport" %}</span>
+        <a href="{% url 'passport' %}" class="{% if path|slice:':8' == 'passport' %}active{% endif %}"><span class="nav-icon">{% icon "passport" 17 %}</span>{% translate "Financial passport" %}</a>
+        <a href="{% url 'sharing' %}" class="{% if path == 'sharing' or path|slice:':7' == 'consent' %}active{% endif %}"><span class="nav-icon">{% icon "shield-check" 17 %}</span>{% translate "Sharing & access" %}</a>
+        {% if membership.is_owner %}
+        <span class="nav-group">{% translate "Business" %}</span>
+        <a href="{% url 'business_profile' %}" class="{% if path == 'business_profile' %}active{% endif %}"><span class="nav-icon">{% icon "building" 17 %}</span>{% translate "Profile" %}</a>
+        <a href="{% url 'staff' %}" class="{% if path == 'staff' %}active{% endif %}"><span class="nav-icon">{% icon "users" 17 %}</span>{% translate "People" %}</a>
+        {% endif %}
+      {% endif %}
+    </nav>
+
+    <div class="workspace-links">
+      {% if workspace_kind != "merchant" and all_memberships %}<a href="{% url 'dashboard' %}">{% icon "arrow-left" 14 %} Merchant workspace</a>{% endif %}
+      {% if workspace_kind != "bank" and analyst %}<a href="{% url 'bank_home' %}">{% icon "landmark" 14 %} Analyst portal</a>{% endif %}
+      {% if workspace_kind != "console" and is_platform_admin %}<a href="{% url 'console_home' %}">{% icon "gauge" 14 %} Platform console</a>{% endif %}
+    </div>
+
+    <div class="side-user">
+      <span class="avatar">{{ user.display_name|first|upper }}</span>
+      <span class="side-user-name">{{ user.display_name }}<small>{% if workspace_kind == "merchant" and membership %}{{ membership.get_role_display }} · {{ membership.business.name }}{% else %}{{ user.email }}{% endif %}</small></span>
+      <form method="post" action="{% url 'logout' %}" data-no-loading>{% csrf_token %}<button type="submit" class="icon-button" title="Sign out" aria-label="Sign out">{% icon "log-out" 16 %}</button></form>
+    </div>
+  </aside>
+
+  <header class="topbar">
+    <a href="{% url 'home' %}" class="brand">{% include "_logo.html" %}<span>Cornerstone</span></a>
+    <span class="topbar-business">{% if workspace_kind == "bank" %}{{ analyst.institution.name }}{% elif workspace_kind == "console" %}Console{% else %}{{ membership.business.name }}{% endif %}</span>
+    <form method="post" action="{% url 'logout' %}" data-no-loading>{% csrf_token %}<button type="submit" class="icon-button" title="Sign out" aria-label="Sign out">{% icon "log-out" 18 %}</button></form>
+  </header>
+
+  <main class="main" id="main">
+    {% for message in messages %}
+      <div class="toast{% if message.tags == 'error' %} toast-error{% elif message.tags == 'info' %} toast-info{% endif %}" role="status">{% if message.tags == 'error' %}{% icon "alert" 18 %}{% else %}{% icon "circle-check" 18 %}{% endif %}<span>{{ message }}</span></div>
+    {% endfor %}
+    {% block content %}{% endblock %}
+  </main>
+
+  <nav class="tabbar" aria-label="Main">
+    {% if workspace_kind == "bank" %}
+      <a href="{% url 'bank_home' %}" class="{% if path == 'bank_home' or path == 'bank_business' %}active{% endif %}">{% icon "landmark" 20 %}<span>Businesses</span></a>
+      <a href="{% url 'bank_receipts' %}" class="{% if path == 'bank_receipts' %}active{% endif %}">{% icon "history" 20 %}<span>Receipts</span></a>
+      <a href="{% url 'glossary' %}" class="{% if path == 'glossary' %}active{% endif %}">{% icon "info" 20 %}<span>Terms</span></a>
+    {% elif workspace_kind == "console" %}
+      <a href="{% url 'console_home' %}" class="{% if path == 'console_home' %}active{% endif %}">{% icon "dashboard" 20 %}<span>Overview</span></a>
+      <a href="{% url 'console_businesses' %}" class="{% if path == 'console_businesses' %}active{% endif %}">{% icon "building" 20 %}<span>Businesses</span></a>
+      <a href="{% url 'console_institutions' %}" class="{% if path == 'console_institutions' %}active{% endif %}">{% icon "landmark" 20 %}<span>Banks</span></a>
+      <a href="{% url 'console_pilot' %}" class="{% if path == 'console_pilot' %}active{% endif %}">{% icon "gauge" 20 %}<span>Pilot</span></a>
+    {% else %}
+      <a href="{% url 'dashboard' %}" class="{% if path == 'dashboard' %}active{% endif %}">{% icon "dashboard" 20 %}<span>Home</span></a>
+      <a href="{% url 'transactions' %}" class="{% if path == 'transactions' or path == 'transaction_new' or path == 'transaction_detail' %}active{% endif %}">{% icon "transactions" 20 %}<span>Records</span></a>
+      <a href="{% url 'passport' %}" class="{% if path|slice:':8' == 'passport' %}active{% endif %}">{% icon "passport" 20 %}<span>Passport</span></a>
+      <a href="{% url 'sharing' %}" class="{% if path == 'sharing' or path|slice:':7' == 'consent' %}active{% endif %}">{% icon "shield-check" 20 %}<span>Sharing</span></a>
+      <a href="{% url 'more' %}" class="{% if path == 'more' %}active{% endif %}">{% icon "menu" 20 %}<span>More</span></a>
+    {% endif %}
+  </nav>
+</div>
+{% endwith %}
+{% endblock %}

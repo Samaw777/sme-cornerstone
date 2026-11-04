@@ -1,0 +1,39 @@
+{% extends "app.html" %}
+{% load ui %}
+{% block title %}Connected sources · {{ request.business.name }}{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <p class="eyebrow">Records</p><h1>Connected sources</h1>
+  <p>Transactions synced from an authorised account are the only records classed as <strong>system-verified</strong>, because the source's own identifier and original event are preserved.</p>
+</header>
+
+<div class="notice notice-demo mb-2">{% icon "flask" 16 %}<span><strong>No live bank or wallet connection exists yet.</strong> The demo connector below generates synthetic data through the same interface a real connector will use. Everything it produces is labelled <span class="badge badge-demo">Demo</span> and is not real verification. A live connector needs a signed agreement, the partner's API specification and institution-issued credentials.</span></div>
+
+{% for s in sources %}
+<section class="card">
+  <div class="row-between">
+    <div><p class="card-title">{% icon "plug" 16 %} {{ s.display_name }} <span class="muted">{{ s.account_mask }}</span> {% if s.is_demo %}<span class="badge badge-demo">Demo source</span>{% endif %}</p>
+      <p class="card-sub">Connected {{ s.connected_at|date:"j M Y" }}{% if s.last_synced_at %} · last synced {{ s.last_synced_at|date:"j M Y H:i" }}{% endif %} · {{ s.transactions.count }} records</p></div>
+    {% if can_manage %}<form method="post" action="{% url 'source_sync' s.pk %}">{% csrf_token %}<button class="btn btn-secondary btn-sm" type="submit">{% icon "refresh" 14 %} Sync now</button></form>{% endif %}
+  </div>
+</section>
+{% empty %}
+<section class="card empty">
+  <span class="empty-icon">{% icon "plug" 22 %}</span>
+  <strong>No sources connected</strong>
+  <p>Until a source is connected, all records are self-reported or evidence-supported, and statement reconciliation isn't possible.</p>
+</section>
+{% endfor %}
+
+<section class="card mt-2">
+  <p class="card-title mb-2">Available connectors</p>
+  {% for c in connectors %}
+  <div class="derived-row">
+    <span><strong>{{ c.name }}</strong><br><small class="faint">{% if c.is_demo %}Synthetic data for demonstrations and testing.{% else %}Requires an approved partner agreement and credentials — not available.{% endif %}</small></span>
+    {% if c.is_demo and can_manage %}<form method="post" action="{% url 'source_connect' %}">{% csrf_token %}<button class="btn btn-secondary btn-sm" type="submit">Connect demo</button></form>{% elif not c.is_demo %}<span class="chip">Not configured</span>{% endif %}
+  </div>
+  {% endfor %}
+  {% if not can_manage %}<p class="small muted mt-1">Only the business owner can connect sources.</p>{% endif %}
+</section>
+{% endblock %}

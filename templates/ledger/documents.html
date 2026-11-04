@@ -1,0 +1,46 @@
+{% extends "app.html" %}
+{% load ui %}
+{% block title %}Documents · {{ request.business.name }}{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <p class="eyebrow">Records</p><h1>Documents</h1>
+  <p>Receipts, invoices and statements stored privately with your business. They're never shared with banks or MFIs — the passport only reports how many records they support and their validation status.</p>
+</header>
+<div class="grid-2">
+  {% if can_upload %}
+  <form method="post" enctype="multipart/form-data" class="form card">
+    {% csrf_token %}
+    <p class="card-title mb-2">{% icon "upload" 16 %} Upload</p>
+    {% include "_field.html" with field=form.file %}
+    <div class="field-row">{% include "_field.html" with field=form.kind %}{% include "_field.html" with field=form.title %}</div>
+    <p class="help mb-2">Uploading checks the file type and size. That doesn't validate what the document says — the status shows that separately.</p>
+    <button class="btn btn-primary" type="submit">Upload</button>
+  </form>
+  {% endif %}
+  <section class="card">
+    <p class="card-title mb-2">{% icon "info" 16 %} Validation statuses</p>
+    <dl class="facts small">
+      <dt>File checks passed</dt><dd>Type, size and file signature match. Content not independently validated.</dd>
+      <dt>Reviewed</dt><dd>Platform staff looked at the document during audited support access.</dd>
+      <dt>Rejected</dt><dd>Doesn't support the record. Linked records go back to self-reported.</dd>
+    </dl>
+  </section>
+</div>
+
+<section class="card card-flush mt-2">
+  {% if documents %}
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>Document</th><th>Status</th><th>Linked to</th><th>Uploaded</th></tr></thead>
+    <tbody>{% for d in documents %}
+      <tr><td class="primary"><a href="{% url 'document_download' d.public_id %}?view=1" target="_blank" rel="noopener">{{ d.title }}</a><small>{{ d.get_kind_display }} · {{ d.size|filesizeformat }}{% if d.is_demo %} · <span class="badge badge-demo">Demo</span>{% endif %}</small></td>
+        <td class="small">{{ d.get_validation_status_display }}{% if d.validation_note %}<small>{{ d.validation_note }}</small>{% endif %}</td>
+        <td class="small">{% for l in d.links.all %}{% if l.transaction %}<a class="link" href="{% url 'transaction_detail' l.transaction.public_id %}">{{ l.transaction.occurred_on|date:"j M" }} · {{ l.transaction.amount|etb_plain }}</a>{% else %}Invoice {{ l.invoice.number }}{% endif %}{% if not forloop.last %}<br>{% endif %}{% empty %}<span class="faint">Not linked yet — open a transaction to link it</span>{% endfor %}</td>
+        <td class="small nowrap">{{ d.uploaded_at|date:"j M Y" }}</td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+  {% else %}
+  <div class="empty"><span class="empty-icon">{% icon "paperclip" 22 %}</span><strong>No documents yet</strong><p>Snap a photo of a receipt or upload a PDF invoice, then link it to the matching record.</p></div>
+  {% endif %}
+</section>
+{% endblock %}

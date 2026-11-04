@@ -1,0 +1,29 @@
+{% extends "app.html" %}
+{% load ui %}
+{% block title %}Set up your business · SME Cornerstone{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <p class="eyebrow">{% if first %}Step 2 of 3{% else %}Add a business{% endif %}</p>
+  <h1>Tell us about your <em>business</em></h1>
+  <p>This becomes the profile on your passport. Everything you enter is shown as <strong>merchant-provided</strong> until it's independently validated.</p>
+</header>
+
+<form method="post" class="form card">
+  {% csrf_token %}
+  {% include "_form_errors.html" %}
+  <fieldset class="fieldset"><legend>Business</legend>
+    <div class="field-row">{% include "_field.html" with field=form.name %}{% include "_field.html" with field=form.sector %}</div>
+    <div class="field-row">{% include "_field.html" with field=form.operating_start_date %}{% include "_field.html" with field=form.phone %}</div>
+  </fieldset>
+  <fieldset class="fieldset"><legend>Location</legend>
+    <div class="field-row field-row-3">{% include "_field.html" with field=form.region %}{% include "_field.html" with field=form.city %}{% include "_field.html" with field=form.sub_city %}</div>
+  </fieldset>
+  <fieldset class="fieldset"><legend>Registration (optional)</legend>
+    {% include "_field.html" with field=form.legal_name %}
+    <div class="field-row">{% include "_field.html" with field=form.tin %}{% include "_field.html" with field=form.trade_license_number %}</div>
+  </fieldset>
+  <div class="notice notice-info mb-2">{% icon "users" 16 %}<span>Next you can add the staff who help keep records. You'll stay the only person who can share data with a bank or MFI.</span></div>
+  <button class="btn btn-primary" type="submit">Create business {% icon "arrow-right" 16 %}</button>
+</form>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends "app.html" %}
+{% load ui %}
+{% block title %}More · SME Cornerstone{% endblock %}
+{% block content %}
+<header class="page-header"><p class="eyebrow">{{ membership.business.name }}</p><h1>More</h1></header>
+<nav class="card side-nav" aria-label="All sections">
+  <a href="{% url 'import_list' %}"><span class="nav-icon">{% icon "upload" 17 %}</span>CSV import</a>
+  <a href="{% url 'receivables' %}"><span class="nav-icon">{% icon "receipt" 17 %}</span>Receivables &amp; obligations</a>
+  <a href="{% url 'documents' %}"><span class="nav-icon">{% icon "paperclip" 17 %}</span>Documents</a>
+  <a href="{% url 'sources' %}"><span class="nav-icon">{% icon "plug" 17 %}</span>Connected sources</a>
+  <a href="{% url 'findings' %}"><span class="nav-icon">{% icon "alert" 17 %}</span>Data quality</a>
+  <a href="{% url 'glossary' %}"><span class="nav-icon">{% icon "info" 17 %}</span>Evidence terms explained</a>
+  {% if membership.is_owner %}
+  <a href="{% url 'business_profile' %}"><span class="nav-icon">{% icon "building" 17 %}</span>Business profile</a>
+  <a href="{% url 'staff' %}"><span class="nav-icon">{% icon "users" 17 %}</span>People</a>
+  {% endif %}
+  {% if all_memberships|length > 1 %}<span class="nav-group">Switch business</span>
+    {% for m in all_memberships %}<form method="post" action="{% url 'switch_business' m.business.public_id %}">{% csrf_token %}<button class="btn btn-ghost btn-sm" type="submit" style="width:100%;justify-content:flex-start">{% icon "building" 14 %} {{ m.business.name }}</button></form>{% endfor %}
+  {% endif %}
+  <a href="{% url 'onboarding' %}"><span class="nav-icon">{% icon "plus" 17 %}</span>Add another business</a>
+  {% if analyst %}<a href="{% url 'bank_home' %}"><span class="nav-icon">{% icon "landmark" 17 %}</span>Analyst portal</a>{% endif %}
+  {% if is_platform_admin %}<a href="{% url 'console_home' %}"><span class="nav-icon">{% icon "gauge" 17 %}</span>Platform console</a>{% endif %}
+</nav>
+{% endblock %}

@@ -1,0 +1,47 @@
+{% extends "app.html" %}
+{% load ui %}
+{% block title %}{{ business.name }} · Console{% endblock %}
+{% block content %}
+<header class="page-header"><a class="back" href="{% url 'console_businesses' %}">{% icon "arrow-left" 14 %} Businesses</a><h1>{{ business.name }}</h1>
+  <p>{{ business.get_sector_display }} · {{ business.city }}, {{ business.get_region_display }}{% if business.is_demo %} · <span class="badge badge-demo">Demo</span>{% endif %}</p></header>
+<div class="grid-2">
+  <section class="card">
+    <p class="card-title mb-2">{% icon "building" 16 %} Identity</p>
+    <dl class="facts">
+      <dt>TIN</dt><dd>{{ business.tin|default:"—" }} · {{ business.get_tin_status_display }}</dd>
+      <dt>Trade licence</dt><dd>{{ business.trade_license_number|default:"—" }} · {{ business.get_trade_license_status_display }}</dd>
+      <dt>Members</dt><dd>{% for m in members %}{{ m.user.email }} ({{ m.get_role_display }}){% if not forloop.last %}<br>{% endif %}{% endfor %}</dd>
+    </dl>
+    <form method="post" class="form mt-2">{% csrf_token %}<input type="hidden" name="action" value="identity">
+      <div class="field-row">{% include "_field.html" with field=identity_form.field %}{% include "_field.html" with field=identity_form.note %}</div>
+      <button class="btn btn-secondary btn-sm" type="submit">Mark validated against a document</button>
+      <p class="help mt-1">Only after checking the value against a document. This is not KYC on behalf of any bank.</p></form>
+  </section>
+  <section class="card">
+    <p class="card-title mb-2">{% icon "key" 16 %} Support access</p>
+    {% if support %}
+      <div class="notice notice-warn">{% icon "eye" 16 %}<span>Open until {{ support.expires_at|date:"H:i" }} — “{{ support.reason }}”. The business can see this access.</span></div>
+    {% else %}
+      <form method="post" class="form">{% csrf_token %}<input type="hidden" name="action" value="support">
+        {% include "_field.html" with field=support_form.reason %}
+        <button class="btn btn-secondary btn-sm" type="submit">Open time-limited access</button></form>
+    {% endif %}
+    <p class="eyebrow mt-2 mb-1">History</p>
+    {% for a in accesses %}<p class="small">{{ a.started_at|date:"j M Y H:i" }} · {{ a.admin.email }} · “{{ a.reason }}”</p>{% empty %}<p class="small muted">None.</p>{% endfor %}
+  </section>
+</div>
+{% if support %}
+<section class="card card-flush mt-2"><div class="card-head"><p class="card-title">Records (read-only)</p></div>
+  <div class="table-wrap"><table class="table"><thead><tr><th>Date</th><th>Description</th><th>Evidence</th><th class="num">Amount</th></tr></thead><tbody>
+  {% for t in transactions %}<tr class="{% if t.status != 'active' %}row-struck{% endif %}"><td class="small nowrap">{{ t.occurred_on }}</td><td class="small">{{ t.description }}</td><td>{% evidence_badge t.evidence_class t.is_demo %}</td><td class="num">{% if t.direction == 'out' %}−{% endif %}{{ t.amount|etb }}</td></tr>{% endfor %}
+  </tbody></table></div></section>
+<section class="card card-flush mt-2"><div class="card-head"><p class="card-title">Documents — review</p></div>
+  <div class="table-wrap"><table class="table"><tbody>
+  {% for d in documents %}<tr><td class="primary"><a href="{% url 'document_download' d.public_id %}?view=1" target="_blank" rel="noopener">{{ d.title }}</a><small>{{ d.get_validation_status_display }}</small></td>
+    <td><form method="post" class="form row">{% csrf_token %}<input type="hidden" name="action" value="document"><input type="hidden" name="document" value="{{ d.public_id }}">
+      <select name="status" class="input" style="width:auto">{% for v, t in validation_choices %}<option value="{{ v }}" {% if d.validation_status == v %}selected{% endif %}>{{ t|truncatechars:40 }}</option>{% endfor %}</select>
+      <input class="input" name="note" placeholder="Note" style="width:auto"><button class="btn btn-secondary btn-sm" type="submit">Save</button></form></td></tr>
+  {% empty %}<tr><td class="muted small">No documents.</td></tr>{% endfor %}
+  </tbody></table></div></section>
+{% endif %}
+{% endblock %}

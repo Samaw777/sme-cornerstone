@@ -1,0 +1,50 @@
+{% extends "app.html" %}
+{% load ui %}
+{% block title %}People · {{ request.business.name }}{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <p class="eyebrow">Business</p>
+  <h1>People with access</h1>
+  <p>Staff can record activity and upload documents within the permissions you set. Only owners can authorise sharing with a bank or MFI.</p>
+</header>
+
+{% if setup_link %}
+<div class="notice notice-info mb-2">{% icon "key" 16 %}<div><strong>Send this one-time link to your staff member</strong> so they can set their password:<div class="token-box mt-1 mono small">{{ setup_link }}</div></div></div>
+{% endif %}
+
+<div class="grid-2">
+  <section class="card card-flush">
+    <div class="card-head"><p class="card-title">{% icon "users" 16 %} Members</p></div>
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th>Person</th><th>Role and permissions</th></tr></thead>
+      <tbody>
+      {% for m in members %}
+        <tr class="{% if not m.is_active %}row-muted{% endif %}">
+          <td class="primary">{{ m.user.display_name }}<small>{{ m.user.email }}</small>{% if not m.is_active %}<small>Access removed</small>{% endif %}</td>
+          <td>
+            <span class="chip">{{ m.get_role_display }}</span>
+            {% if m.role == "staff" %}
+              <form method="post" action="{% url 'staff_update' m.pk %}" class="form mt-1">
+                {% csrf_token %}
+                <div class="choice-list">{% for value, text in perm_form.fields.permissions.choices %}<label><input type="checkbox" name="permissions" value="{{ value }}" {% if value in m.permissions %}checked{% endif %}><span>{{ text }}</span></label>{% endfor %}</div>
+                <div class="btn-row"><button class="btn btn-secondary btn-sm" type="submit">Save permissions</button>{% if m.is_active %}<button class="btn btn-danger btn-sm" name="remove" value="1" type="submit">Remove access</button>{% endif %}</div>
+              </form>
+            {% else %}<small>All permissions, including sharing consent</small>{% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+  </section>
+  <form method="post" class="form card">
+    {% csrf_token %}
+    <p class="card-title mb-2">{% icon "plus" 16 %} Add staff</p>
+    {% include "_form_errors.html" %}
+    {% include "_field.html" with field=form.name %}
+    {% include "_field.html" with field=form.email %}
+    {% include "_field.html" with field=form.permissions %}
+    <div class="btn-row"><button class="btn btn-primary" type="submit">Add staff</button><a class="btn btn-ghost" href="{% url 'dashboard' %}">Done for now</a></div>
+  </form>
+</div>
+{% endblock %}

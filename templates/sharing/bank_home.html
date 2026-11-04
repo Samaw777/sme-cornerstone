@@ -1,0 +1,26 @@
+{% extends "app.html" %}
+{% load ui %}
+{% block title %}Authorised businesses · {{ institution.name }}{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <p class="eyebrow">{{ institution.name }}{% if institution.is_demo %} · <span class="badge badge-demo">Demo institution</span>{% endif %}</p>
+  <h1>Authorised businesses</h1>
+  <p>Only businesses that have given {{ institution.name }} active consent appear here. Each passport is supplementary evidence; your institution's credit policy and decision remain your own.</p>
+</header>
+<section class="card card-flush">
+  {% if consents %}
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>Business</th><th>Purpose</th><th>Period</th><th>Expires</th><th></th></tr></thead>
+    <tbody>{% for c in consents %}
+      <tr><td class="primary"><a href="{% url 'bank_business' c.business.public_id %}">{% if "profile" in c.categories %}{{ c.business.name }}{% else %}Business {{ c.reference }}{% endif %}</a><small>{{ c.reference }}{% if c.business.is_demo %} · demo business{% endif %}</small></td>
+        <td class="small">{{ c.get_purpose_display }}</td><td class="small nowrap">{{ c.period_start|date:"M Y" }} – {{ c.period_end|date:"M Y" }}</td>
+        <td class="small nowrap">{{ c.expires_at|date:"j M Y" }}</td><td><a class="btn btn-secondary btn-sm" href="{% url 'bank_business' c.business.public_id %}">Open passport</a></td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+  {% else %}
+  <div class="empty"><span class="empty-icon">{% icon "lock" 22 %}</span><strong>No active authorisations</strong><p>When a business authorises {{ institution.name }}, it appears here until the consent expires or is revoked.</p></div>
+  {% endif %}
+</section>
+<p class="small muted mt-2">{% icon "info" 13 %} Opening a passport creates an access receipt that the business can see.</p>
+{% endblock %}

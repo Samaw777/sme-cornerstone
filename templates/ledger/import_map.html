@@ -1,0 +1,35 @@
+{% extends "app.html" %}
+{% load ui %}
+{% block title %}Map columns · CSV import{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <a class="back" href="{% url 'import_list' %}">{% icon "arrow-left" 14 %} CSV import</a>
+  <h1>Map columns</h1>
+  <p>Tell us which column holds what in <strong>{{ batch.filename }}</strong>. We've guessed where we could.</p>
+</header>
+{% include "ledger/_import_steps.html" with step=2 %}
+
+<section class="card card-flush mb-2">
+  <div class="card-head"><p class="card-title">{% icon "file-text" 16 %} First rows of the file</p></div>
+  <div class="table-wrap"><table class="table">
+    <thead><tr>{% for h in headers %}<th>{{ h }}</th>{% endfor %}</tr></thead>
+    <tbody>{% for row in sample %}<tr>{% for cell in row %}<td class="small">{{ cell }}</td>{% endfor %}</tr>{% endfor %}</tbody>
+  </table></div>
+</section>
+
+<form method="post" class="form card">
+  {% csrf_token %}
+  {% if mapping_errors %}<ul class="errors">{% for e in mapping_errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+  <div class="field-row">{% include "_field.html" with field=form.date %}{% include "_field.html" with field=form.date_format %}</div>
+  <fieldset class="fieldset"><legend>Amount — either one column, or separate money-in / money-out columns</legend>
+    <div class="field-row">{% include "_field.html" with field=form.amount %}{% include "_field.html" with field=form.direction %}</div>
+    <div class="field-row">{% include "_field.html" with field=form.money_in %}{% include "_field.html" with field=form.money_out %}</div>
+  </fieldset>
+  <div class="field-row">{% include "_field.html" with field=form.category %}{% include "_field.html" with field=form.reference %}</div>
+  <div class="field-row">{% include "_field.html" with field=form.description %}{% include "_field.html" with field=form.counterparty %}</div>
+  <p class="help mb-2">A reference column (receipt or transaction number) gives the most reliable duplicate detection.</p>
+  <div class="btn-row"><button class="btn btn-primary" type="submit">Review rows {% icon "arrow-right" 16 %}</button></div>
+</form>
+<form method="post" action="{% url 'import_discard' batch.pk %}" class="mt-1">{% csrf_token %}<button class="btn btn-ghost btn-sm" type="submit">Discard this upload</button></form>
+{% endblock %}

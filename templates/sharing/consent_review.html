@@ -1,0 +1,27 @@
+{% extends "app.html" %}
+{% load ui %}
+{% block title %}Review authorisation · {{ request.business.name }}{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <p class="eyebrow">Step 2 of 2 · Review</p>
+  <h1>Review before you authorise</h1>
+  <p>Nothing has been shared yet.</p>
+</header>
+<section class="card" style="max-width: 44rem">
+  <dl class="facts">
+    <dt>Receiving institution</dt><dd><strong>{{ data.institution.name }}</strong> ({{ data.institution.get_kind_display }}){% if data.institution.is_demo %} <span class="badge badge-demo">Demo institution</span>{% endif %}</dd>
+    <dt>Purpose</dt><dd>{% for v, t in form.fields.purpose.choices %}{% if v == data.purpose %}{{ t }}{% endif %}{% endfor %}{% if data.purpose_detail %} — {{ data.purpose_detail }}{% endif %}</dd>
+    <dt>Reporting period</dt><dd>{{ data.period_start|date:"F Y" }} – {{ data.period_end|date:"F Y" }}</dd>
+    <dt>Access expires</dt><dd>{{ data.expires_at|date:"j F Y, H:i" }} (or when you revoke)</dd>
+    <dt>Data they may see</dt><dd><ul class="stack-sm">{% for c in data.categories %}<li>{% icon "check" 14 %} <strong>{% for v, t in form.fields.categories.choices %}{% if v == c %}{{ t }}{% endif %}{% endfor %}</strong><br><small class="faint">{{ category_help|get:c }}</small></li>{% endfor %}</ul></dd>
+  </dl>
+  <div class="notice notice-warn mt-2">{% icon "alert" 16 %}<span>You can revoke this at any time and access stops immediately. Revoking <strong>can't retrieve</strong> reports the institution has already viewed or downloaded.</span></div>
+  <p class="disclaimer mt-2">The passport provides financial evidence and is not a credit decision. {{ data.institution.name }} remains responsible for its own checks and decision.</p>
+  <form method="post" class="form mt-2">
+    {% csrf_token %}
+    {% for key, values in post.lists %}{% if key != "csrfmiddlewaretoken" and key != "confirm" %}{% for v in values %}<input type="hidden" name="{{ key }}" value="{{ v }}">{% endfor %}{% endif %}{% endfor %}
+    <div class="btn-row"><button class="btn btn-primary" type="submit" name="confirm" value="yes">{% icon "shield-check" 16 %} Authorise {{ data.institution.name }}</button><button class="btn btn-ghost" type="submit" name="confirm" value="edit" formaction="{% url 'consent_new' %}">Change</button></div>
+  </form>
+</section>
+{% endblock %}

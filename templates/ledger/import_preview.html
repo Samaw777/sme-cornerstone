@@ -1,0 +1,67 @@
+{% extends "app.html" %}
+{% load ui %}
+{% block title %}Review import · CSV import{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <a class="back" href="{% url 'import_list' %}">{% icon "arrow-left" 14 %} CSV import</a>
+  <h1>{% if batch.status == "committed" %}Import complete{% elif batch.status == "discarded" %}Import discarded{% else %}Review before importing{% endif %}</h1>
+  <p>{{ batch.filename }} · uploaded {{ batch.created_at|date:"j M Y H:i" }}</p>
+</header>
+{% if batch.status == "committed" %}{% include "ledger/_import_steps.html" with step=4 %}{% else %}{% include "ledger/_import_steps.html" with step=3 %}{% endif %}
+
+{% if batch.status == "committed" %}
+  <section class="stats">
+    <div class="card"><p class="stat-label">Imported</p><p class="stat-value pos">{{ batch.rows_imported }}</p></div>
+    <div class="card"><p class="stat-label">Skipped as duplicates</p><p class="stat-value">{{ batch.rows_duplicate }}</p></div>
+    <div class="card"><p class="stat-label">Rows with errors</p><p class="stat-value">{{ batch.rows_error }}</p></div>
+    <div class="card"><p class="stat-label">Rows in file</p><p class="stat-value">{{ batch.rows_total }}</p></div>
+  </section>
+  <div class="btn-row"><a class="btn btn-primary" href="{% url 'transactions' %}?source=csv">View imported records</a><a class="btn btn-secondary" href="{% url 'import_list' %}">Import another file</a></div>
+{% elif batch.status == "discarded" %}
+  <div class="card empty"><strong>Nothing was saved from this file.</strong><div class="row"><a class="btn btn-secondary" href="{% url 'import_list' %}">Start a new import</a></div></div>
+{% else %}
+  {% if same_file %}<div class="notice notice-warn mb-2">{% icon "alert" 16 %}<span>This exact file was already imported on {{ same_file.committed_at|date:"j M Y" }}. Its rows are detected as duplicates and won't be counted twice.</span></div>{% endif %}
+  <section class="stats">
+    <div class="card"><p class="stat-label">{% icon "circle-check" 14 %} Ready to import</p><p class="stat-value pos">{{ summary.ok }}</p></div>
+    <div class="card"><p class="stat-label">{% icon "ban" 14 %} Already imported</p><p class="stat-value">{{ summary.duplicate }}</p><p class="stat-note">Skipped — never double counted</p></div>
+    <div class="card"><p class="stat-label">{% icon "alert" 14 %} Repeated in this file</p><p class="stat-value">{{ summary.repeat }}</p><p class="stat-note">Skipped unless you confirm below</p></div>
+    <div class="card"><p class="stat-label">{% icon "alert" 14 %} Errors</p><p class="stat-value {% if summary.error %}neg{% endif %}">{{ summary.error }}</p><p class="stat-note">Fix in the file and re-upload</p></div>
+  </section>
+
+  <form method="post" action="{% url 'import_commit' batch.pk %}" class="form card mt-2">
+    {% csrf_token %}
+    {% if summary.repeat %}<label class="check mb-2"><input type="checkbox" name="include_repeats" value="1"><span>Import the {{ summary.repeat }} repeated row(s) as separate records<small>Only if they really are separate transactions (e.g. two identical sales on the same day).</small></span></label>{% endif %}
+    <div class="row-between">
+      <p class="small muted">{{ summary.ok }} row(s) will be saved as <strong>self-reported</strong> records with their original row preserved.</p>
+      <div class="row"><button class="btn btn-primary" type="submit" {% if not summary.ok and not summary.repeat %}disabled{% endif %}>Import {{ summary.ok }} row(s)</button><a class="btn btn-ghost" href="{% url 'import_map' batch.pk %}">Change mapping</a></div>
+    </div>
+  </form>
+
+  <div class="segmented mt-2" role="tablist">
+    <a href="?show=all" class="{% if show == 'all' %}active{% endif %}">All</a>
+    <a href="?show=ok" class="{% if show == 'ok' %}active{% endif %}">Ready</a>
+    <a href="?show=duplicate" class="{% if show == 'duplicate' %}active{% endif %}">Duplicates</a>
+    <a href="?show=repeat" class="{% if show == 'repeat' %}active{% endif %}">Repeats</a>
+    <a href="?show=error" class="{% if show == 'error' %}active{% endif %}">Errors</a>
+  </div>
+  <section class="card card-flush mt-1">
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th>Line</th><th>Status</th><th>Date</th><th>Description</th><th>Category</th><th class="num">Amount</th><th>Notes</th></tr></thead>
+      <tbody>{% for r in results %}
+        <tr class="row-status-{{ r.status }}">
+          <td class="faint">{{ r.line }}</td>
+          <td>{% if r.status == "ok" %}<span class="chip chip-ok">Ready</span>{% elif r.status == "duplicate" %}<span class="chip chip-warn">Duplicate</span>{% elif r.status == "repeat" %}<span class="chip chip-warn">Repeat</span>{% else %}<span class="chip chip-danger">Error</span>{% endif %}</td>
+          <td class="nowrap">{{ r.date|date:"j M Y"|default:"—" }}</td>
+          <td class="small">{{ r.description|default:r.counterparty|default:"—" }}</td>
+          <td class="small">{{ category_labels|get:r.category|default:"—" }}</td>
+          <td class="num">{% if r.amount %}{% if r.direction == "out" %}−{% endif %}{{ r.amount|etb }}{% else %}—{% endif %}</td>
+          <td><ul class="issue-list">{% for e in r.errors %}<li class="err">{{ e }}</li>{% endfor %}{% for w in r.warnings %}<li class="warn">{{ w }}</li>{% endfor %}</ul></td>
+        </tr>
+      {% empty %}<tr><td colspan="7"><div class="empty"><strong>No rows in this view</strong></div></td></tr>{% endfor %}</tbody>
+    </table></div>
+    {% if truncated %}<p class="small muted" style="padding:1rem">Showing the first 500 rows.</p>{% endif %}
+  </section>
+  <form method="post" action="{% url 'import_discard' batch.pk %}" class="mt-1">{% csrf_token %}<button class="btn btn-ghost btn-sm" type="submit">Discard — save nothing</button></form>
+{% endif %}
+{% endblock %}

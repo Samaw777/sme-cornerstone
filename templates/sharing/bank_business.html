@@ -1,0 +1,16 @@
+{% extends "app.html" %}
+{% load ui %}
+{% block title %}Passport · {{ analyst.institution.name }}{% endblock %}
+
+{% block content %}
+<header class="page-header no-print">
+  <a class="back" href="{% url 'bank_home' %}">{% icon "arrow-left" 14 %} Authorised businesses</a>
+  <div class="row-between">
+    <div><h1>{% if data.profile %}{{ data.profile.name }}{% else %}Business {{ consent.reference }}{% endif %}</h1>
+      <p>Shown under consent <code>{{ consent.reference }}</code> for: {{ consent.get_purpose_display }}. Access expires {{ consent.expires_at|date:"j M Y" }}.</p></div>
+    {% if can_pdf %}<a class="btn btn-primary" href="{% url 'bank_pdf' business.public_id %}">{% icon "download" 16 %} Download PDF</a>{% else %}<span class="chip">PDF download not authorised</span>{% endif %}
+  </div>
+</header>
+<div class="notice notice-info mb-2 no-print">{% icon "eye" 16 %}<span>Access receipt <code>{{ receipt.reference }}</code> recorded {{ receipt.created_at|date:"j M Y H:i" }} · report v{{ snapshot.version }} · method {{ snapshot.calculation_version.version }}. Sections outside the consent are not included.</span></div>
+{% include "passport/_report.html" %}
+{% endblock %}
