@@ -13,8 +13,8 @@ from reportlab.platypus import KeepTogether, Paragraph, SimpleDocTemplate, Space
 INK = colors.HexColor("#101828")
 MUTED = colors.HexColor("#667085")
 LINE = colors.HexColor("#e4e7ec")
-ACCENT = colors.HexColor("#0e5a43")
-SOFT = colors.HexColor("#ecf5f1")
+ACCENT = colors.HexColor("#163a6b")
+SOFT = colors.HexColor("#eef3fb")
 
 
 def _money(value):

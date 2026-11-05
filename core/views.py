@@ -21,7 +21,7 @@ def manifest(request):
         "scope": "/",
         "display": "standalone",
         "background_color": "#f5f6f8",
-        "theme_color": "#0e5a43",
+        "theme_color": "#163a6b",
         "icons": [
             _icon("icons/icon-192.png", 192),
             _icon("icons/icon-512.png", 512),
